@@ -71,9 +71,13 @@ DepthExample::camera_cb(const image_cp& depth,
 			const camera_info_cp& camera_info)
 {
     if (depth->encoding == sensor_msgs::image_encodings::TYPE_16UC1)
+    {
 	create_cloud_from_depth<uint16_t>(depth, camera_info);
+    }
     else if (depth->encoding == sensor_msgs::image_encodings::TYPE_32FC1)
+    {
 	create_cloud_from_depth<float>(depth, camera_info);
+    }
     else
     {
 	ROS_ERROR_STREAM("Unknown depth type[" << depth->encoding << ']');
@@ -115,6 +119,8 @@ DepthExample::create_cloud_from_depth(const image_cp& depth,
     for (uint32_t u = 0; u < _cloud->width; ++u)
 	uv(u).x = u;			// Setup horizontal coodinates.
 
+  // Set 3D coordinates for each point in the output cloud.
+    sensor_msgs::PointCloud2Iterator<float>	xyz(*_cloud, "x");
     for (uint32_t v = 0; v < _cloud->height; ++v)
     {
 	for (uint32_t u = 0; u < _cloud->width; ++u)
@@ -124,14 +130,11 @@ DepthExample::create_cloud_from_depth(const image_cp& depth,
       // to canonical image coordinates (x, y) with an unity focal length.
 	cv::undistortPoints(uv, xy, K, D);
 
-	sensor_msgs::PointCloud2Iterator<float>	xyz(*_cloud, "x");
-	xyz += v*_cloud->width;
-
 	auto	p = reinterpret_cast<const T*>(depth->data.data()
 					       + v*depth->step);
 	for (uint32_t u = 0; u < _cloud->width; ++u)
 	{
-	    const auto	d = to_meters<T>(*p++);
+	    const auto	d = to_meters<T>(*p++);		// depth in meters
 
 	    if (d != 0.0f)	// valid depth?
 	    {
@@ -149,7 +152,6 @@ DepthExample::create_cloud_from_depth(const image_cp& depth,
 	}
     }
 }
-    
 }	// namespace threed_camera_tutorial
 
 /************************************************************************

@@ -70,7 +70,7 @@ PointCloudExample::cloud_cb(const cloud_cp& cloud)
 	return;
     }
 
-  // Create a image from color information extracted from the input cloud.
+  // Setup fields of the color image.
     _color->header	 = cloud->header;
     _color->height	 = cloud->height;
     _color->width	 = cloud->width;
@@ -79,12 +79,12 @@ PointCloudExample::cloud_cb(const cloud_cp& cloud)
     _color->step	 = _color->width * 3*sizeof(uint8_t);
     _color->data.resize(_color->height * _color->step);
 
+  // Extract color information from each point in the input cloud.
     sensor_msgs::PointCloud2ConstIterator<uint8_t>	bgr(*cloud, "rgb");
-
     for (uint32_t v = 0; v < _color->height; ++v)
     {
-	auto	rgb = reinterpret_cast<uint8_t*>(_color->data.data())
-		    + v*_color->step;
+	auto	rgb = reinterpret_cast<uint8_t*>(_color->data.data()
+						 + v*_color->step);
 
 	for (uint32_t u = 0; u < _color->width; ++u)
 	{
@@ -100,7 +100,6 @@ PointCloudExample::cloud_cb(const cloud_cp& cloud)
   // Publish color image.
     _color_pub.publish(_color);
 }
-    
 }	// namespace threed_camera_tutorial
 
 /************************************************************************

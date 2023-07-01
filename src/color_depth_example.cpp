@@ -95,9 +95,13 @@ ColorDepthExample::camera_cb(const image_cp& color,
     }
     
     if (depth->encoding == sensor_msgs::image_encodings::TYPE_16UC1)
+    {
 	create_cloud_from_color_and_depth<uint16_t>(color, depth, camera_info);
+    }
     else if (depth->encoding == sensor_msgs::image_encodings::TYPE_32FC1)
+    {
 	create_cloud_from_color_and_depth<float>(color, depth, camera_info);
+    }
     else
     {
 	ROS_ERROR_STREAM("Unknown depth type[" << depth->encoding << ']');
@@ -142,6 +146,9 @@ ColorDepthExample::create_cloud_from_color_and_depth(
     for (uint32_t u = 0; u < _cloud->width; ++u)
 	uv(u).x = u;			// Setup horizontal coodinates.
 
+  // Set 3D coordinates and color for each point in the output cloud.
+    sensor_msgs::PointCloud2Iterator<float>	xyz(*_cloud, "x");
+    sensor_msgs::PointCloud2Iterator<uint8_t>	bgr(*_cloud, "rgb");
     for (uint32_t v = 0; v < _cloud->height; ++v)
     {
 	for (uint32_t u = 0; u < _cloud->width; ++u)
@@ -151,42 +158,36 @@ ColorDepthExample::create_cloud_from_color_and_depth(
       // to canonical image coordinates (x, y) with an unity focal length.
 	cv::undistortPoints(uv, xy, K, D);
 
-	sensor_msgs::PointCloud2Iterator<float>		xyz(*_cloud, "x");
-	xyz += v*_cloud->width;
-	sensor_msgs::PointCloud2Iterator<uint8_t>	rgb(*_cloud, "rgb");
-	rgb += v*_cloud->width;
-
 	auto	p = reinterpret_cast<const T*>(depth->data.data()
 					       + v*depth->step);
 	auto	q = reinterpret_cast<const uint8_t*>(color->data.data()
 						     + v*color->step);
 	for (uint32_t u = 0; u < _cloud->width; ++u)
 	{
-	    const auto	d = to_meters<T>(*p++);
+	    const auto	d = to_meters<T>(*p++);		// depth in meters
 
-	    if (d != 0.0f)	// valid depth?
+	    if (d != 0.0f)				// valid depth?
 	    {
-	    	xyz[0] = xy(u).x * d;
-	    	xyz[1] = xy(u).y * d;
-	    	xyz[2] = d;
-		rgb[0] = q[2];		// blue
-		rgb[1] = q[1];		// green
-		rgb[2] = q[0];		// red
+	    	xyz[0] = xy(u).x * d;	// x
+	    	xyz[1] = xy(u).y * d;	// y
+	    	xyz[2] = d;		// z
+		bgr[0] = q[2];		// blue
+		bgr[1] = q[1];		// green
+		bgr[2] = q[0];		// red
 	    }
 	    else
 	    {
 	    	xyz[0] = xyz[1] = xyz[2]
 		       = std::numeric_limits<float>::quiet_NaN(); // null point
-		rgb[0] = rgb[1] = rgb[2] = 0;
+		bgr[0] = bgr[1] = bgr[2] = 0;
 	    }
 
 	    q += 3;
 	    ++xyz;
-	    ++rgb;
+	    ++bgr;
 	}
     }
 }
-    
 }	// namespace threed_camera_tutorial
 
 /************************************************************************
