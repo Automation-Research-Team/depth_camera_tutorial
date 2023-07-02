@@ -22,13 +22,14 @@ depth_camera_tutorial
 [message_filters](http://wiki.ros.org/message_filters)
 
 ### 1.2 深度値の型
+深度カメラのROSドライバは，深度画像の各画素を`float`または[uint16_t](https://cpprefjp.github.io/reference/cstdint/uint16_t.html)型で出力する．前者の単位はメートル，後者はミリメートルである．両者の区別は，[sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型メッセージの`encoding`フィールドに反映される．
 - **encoding = sensor_msgs::image_encodings::TYPE_32FC1**: `float`型
 - **encoding = sensor_msgs::image_encodings::TYPE_16UC1**: `uint16_t`型
 
-多くのドライバは深度値を`float`型で出力するが，[オリジナルのRealsense用ドライバ](https://github.com/IntelRealSense/realsense-ros)は`uint16_t`型で出力する．この時，最小単位が1mmとなるので，カメラと対象物体の距離が近い(接写)場合，深度値から復元された3D点群に階段状の量子化誤差が現れることがある．これを防ぐため[float型で出力するように修正したドライバ](https://gitlab.com/art-aist/realsense-ros)があるので，接写する場合はこちらを使用することを薦める．
+深度値を`float`型で出力するドライバが大半であるが，[オリジナルのRealsense用ドライバ](https://github.com/IntelRealSense/realsense-ros)は`uint16_t`型で出力する．この時，最小単位が1mmとなるので，カメラと対象物体の距離が近い(接写)場合，深度値から復元された3D点群に量子化誤差による階段状のアーチファクトが生じることがある．これを防ぐため[float型で出力するように修正したドライバ](https://gitlab.com/art-aist/realsense-ros)があるので，接写する場合はこちらを使用することを薦める．
 
 ### 1.3 無効画素の扱い
-一般に，深度カメラで取得した深度画像には，深度値が得られない無効画素が含まれる．ステレオの場合は片方のセンサからしか観測されない3D点，coded light patternの場合はプロジェクタの光が照射されない3D点などのオクルージョンによるもの，黒色物体など反射光の不足によるものが代表的である．このような無効画素は，トピックメッセージ上で次のように表現される([see here](https://ros.org/reps/rep-0118.html))．
+一般に，深度カメラで取得した深度画像には，深度値が得られない無効画素が含まれる．片方のセンサからしか観測されない3D点（ステレオの場合）やプロジェクタの光が照射されない3D点（coded light patternの場合）などのオクルージョンによるもの，黒色物体など反射光の不足によるものが代表的である．このような無効画素は，トピックメッセージ上で次のように表現される([see here](https://ros.org/reps/rep-0118.html))．
 - **pointcloud**([sensor_msgs/PointCloud2](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud2.html)型):x, y, z座標値に[NaN](https://cpprefjp.github.io/reference/limits/numeric_limits/quiet_nan.html)を入れて無効画素を表す
 - **深度画像**([sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型): 深度値に`0`を入れて無効画素を表す
 ## 2 パッケージのビルド
