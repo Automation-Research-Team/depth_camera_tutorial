@@ -24,8 +24,6 @@ class PointCloudExample
   public:
 		PointCloudExample(ros::NodeHandle& nh)			;
 
-    void	run()						const	;
-
   private:
     void	cloud_cb(const cloud_cp& cloud)				;
 
@@ -46,12 +44,6 @@ PointCloudExample::PointCloudExample(ros::NodeHandle& nh)
 }
 
 void
-PointCloudExample::run() const
-{
-    ros::spin();
-}
-    
-void
 PointCloudExample::cloud_cb(const cloud_cp& cloud)
 {
   // Check if the input cloud consists of a 2D map of 3D points.
@@ -70,7 +62,7 @@ PointCloudExample::cloud_cb(const cloud_cp& cloud)
 	return;
     }
 
-  // Setup fields of the color image.
+  // Setup fields in the color image and allocate data buffer.
     _color->header	 = cloud->header;
     _color->height	 = cloud->height;
     _color->width	 = cloud->width;
@@ -115,7 +107,7 @@ main(int argc, char* argv[])
 	ros::NodeHandle					nh("~");
 	threed_camera_tutorial::PointCloudExample	example(nh);
 
-	example.run();
+	ros::spin();
     }
     catch (const std::exception& err)
     {

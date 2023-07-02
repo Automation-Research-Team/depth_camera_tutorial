@@ -42,8 +42,6 @@ class ColorDepthExample
   public:
 		ColorDepthExample(ros::NodeHandle& nh)			;
 
-    void	run()						const	;
-
   private:
     void	camera_cb(const image_cp& color,
 			  const image_cp& depth,
@@ -73,16 +71,10 @@ ColorDepthExample::ColorDepthExample(ros::NodeHandle& nh)
      _cloud_pub(nh.advertise<cloud_t>("pointcloud", 1)),
      _cloud(new cloud_t)
 {
-  // Register callback for subscribing color, depth and camera_info.
+  // Register callback for subscribing synched color, depth and camera_info.
     _sync.registerCallback(&ColorDepthExample::camera_cb, this);
 }
 
-void
-ColorDepthExample::run() const
-{
-    ros::spin();
-}
-    
 void
 ColorDepthExample::camera_cb(const image_cp& color,
 			     const image_cp& depth,
@@ -203,7 +195,7 @@ main(int argc, char* argv[])
 	ros::NodeHandle					nh("~");
 	threed_camera_tutorial::ColorDepthExample	example(nh);
 
-	example.run();
+	ros::spin();
     }
     catch (const std::exception& err)
     {

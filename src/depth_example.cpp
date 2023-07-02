@@ -35,8 +35,6 @@ class DepthExample
   public:
 		DepthExample(ros::NodeHandle& nh)			;
 
-    void	run()						const	;
-
   private:
     void	camera_cb(const image_cp& depth,
 			  const camera_info_cp& camera_info)		;
@@ -60,12 +58,6 @@ DepthExample::DepthExample(ros::NodeHandle& nh)
 {
 }
 
-void
-DepthExample::run() const
-{
-    ros::spin();
-}
-    
 void
 DepthExample::camera_cb(const image_cp& depth,
 			const camera_info_cp& camera_info)
@@ -167,7 +159,7 @@ main(int argc, char* argv[])
 	ros::NodeHandle				nh("~");
 	threed_camera_tutorial::DepthExample	example(nh);
 
-	example.run();
+	ros::spin();
     }
     catch (const std::exception& err)
     {
