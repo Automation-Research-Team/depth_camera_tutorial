@@ -1,7 +1,7 @@
 depth_camera_tutorial
 ==================================================
 ## 概要
-本パッケージは，depthカメラからの出力を処理するROSノードのサンプルコードを提供し，ROSでdepthカメラを用いた点群処理を行うプログラムを開発するために必要な基礎知識を解説する．特に，以下の項目に重点を置く．
+本パッケージは，ROSでdepthカメラを用いた点群処理を行うプログラムを開発するために必要な基礎知識を解説する．具体的には，以下の項目について説明し，その実装例としてdepthカメラからの出力を処理するROSノードのサンプルコードを提供する．
 - depthカメラの構造とその出力
 - depthカメラが出力するpointcloudをsubscribeし，それを構成する個々の3D点を処理する方法
 - depthカメラが出力する複数のtopicを，時刻同期を取りながらsubscribeする方法
@@ -14,19 +14,22 @@ depth_camera_tutorial
 多くのdepthカメラは，depthセンサとcolor（あるいはgrey）センサの両方を備える．通常両者は別のハードウェアである（[Realsense](https://www.intel.com/content/www/us/en/architecture-and-technology/realsense-overview.html)など）が，同じハードウェアで兼ねる場合もある（[PhoXi](https://www.photoneo.com/phoxi-3d-scanner)など）．
 
 depthカメラのROSドライバは，
-- **depth/color画像**: [sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型
-- **depth/colorセンサのカメラパラメータ**: [sensor_msgs/CameraInfo](https://docs.ros.org/en/api/sensor_msgs/html/msg/CameraInfo.html)型
+- **depth画像**: [sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型，カメラ中心から観測対象までの光軸に沿った距離を画素値とする二次元配列
+- **depthセンサのカメラパラメータ**: [sensor_msgs/CameraInfo](https://docs.ros.org/en/api/sensor_msgs/html/msg/CameraInfo.html)型
+- **color画像**: [sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型，観測対象のカラーを画素値とする二次元配列
+- **colorセンサのカメラパラメータ**: [sensor_msgs/CameraInfo](https://docs.ros.org/en/api/sensor_msgs/html/msg/CameraInfo.html)型
 - **depth画像とカメラパラメータから計算された3D点から成るpointcloud**: [sensor_msgs/PointCloud2](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud2.html)型
 
-を出力する．かつてはpointcloudの型として[sensor_msgs/PointCloud](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud.html)が使われていたが，現在はほとんど`sensor_msgs/PointCloud2`に移行している．
-[message_filters](http://wiki.ros.org/message_filters)
+を出力する．`sensor_msgs/PointCloud2`型のpointcloudの各点には，その3D座標値のほか，オプションとしてカラー値や法線を表す3Dベクトルを格納することができる．
+
+かつてはpointcloudの型として[sensor_msgs/PointCloud](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud.html)が使われていたが，現在はほとんど`sensor_msgs/PointCloud2`に移行している．
 
 ### 1.2 depth値の型
 depthカメラのROSドライバは，depth画像の各画素を`float`または[uint16_t](https://cpprefjp.github.io/reference/cstdint/uint16_t.html)型で出力し，前者の単位はメートル，後者はミリメートルである([see here](https://ros.org/reps/rep-0118.html))．両者の区別は，[sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型メッセージの`encoding`フィールドに反映される．
 - encoding = **sensor_msgs::image_encodings::TYPE_32FC1**: `float`型
 - encoding = **sensor_msgs::image_encodings::TYPE_16UC1**: `uint16_t`型
 
-depth値を`float`型で出力するドライバが大半であるが，[オリジナルのRealsense用ドライバ](https://github.com/IntelRealSense/realsense-ros)は`uint16_t`型で出力する．この時，最小単位が1mmとなるので，カメラと対象物体の距離が近い(接写)場合，depth値から復元された3D点群に量子化誤差による階段状のアーチファクトが生じることがある．これを防ぐため[float型で出力するように修正したドライバ](https://gitlab.com/art-aist/realsense-ros)があるので，接写する場合はこちらを使用することを薦める．
+depth値を`float`型で出力するドライバが大半であるが，[オリジナルのRealsense用ドライバ](https://github.com/IntelRealSense/realsense-ros)は`uint16_t`型で出力する．この時，最小単位が1mmとなるので，カメラと対象物体の距離が近い(接写)場合，depth値から復元された3D点群に量子化誤差による階段状のアーチファクトが生じることがある．これを避けるために[float型で出力するように修正したドライバ](https://gitlab.com/art-aist/realsense-ros)があるので，接写する場合はこちらを使用することを薦める．
 
 ### 1.3 無効画素の扱い
 一般に，depthカメラで取得したdepth画像には，depth値が得られない無効画素が含まれる．片方のセンサからしか観測されない3D点（ステレオの場合）やプロジェクタの光が照射されない3D点（coded light patternの場合）などのオクルージョンによるもの，黒色物体など反射光の不足によるものが代表的である．このような無効画素は，トピックメッセージ上で次のように表現される([see here](https://ros.org/reps/rep-0118.html))．
@@ -34,6 +37,13 @@ depth値を`float`型で出力するドライバが大半であるが，[オリ�
 - **depth画像**([sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型): depth値に`0`を入れて無効画素を表す
 
 ### 1.4 organized/unorganized pointcloud
+`sensor_msgs/PointCloud2`型のpointcloudは，観測された全ての点を一次元配列に並べる`unorganized pointcloud`と，depthセンサの各画素に対応した二次元配列として表現する`organized pointcloud`の2つのフォーマットがある．前者は3D情報が得られなかった無効画素を含まないのでコンパクトであるが，画素間の隣接関係は失われる．後者は無効画素も記憶領域を消費するので全体の容量は大きくなるが，画素間の隣接関係が保存される．そのため，pointcloud中の任意の点に対してその近傍点を知ることは容易である．
+
+両者の区別は，[sensor_msgs/PointCloud2](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud2.html)型メッセージの`height`, `width`, `is_dense`フィールドに反映される．
+- **unorganized pointcloud**: `height` = 1, `width` = 点の個数, `is_dense` = true
+- **organized pointcloud**: `height` = 二次元配列の行数, `width` = 二次元配列の列数, `is_dense` = false
+
+[message_filters](http://wiki.ros.org/message_filters)
 
 ### 1.5 pointcloudとdepth画像のどちらを選ぶか？
 ## 2. パッケージのビルド
