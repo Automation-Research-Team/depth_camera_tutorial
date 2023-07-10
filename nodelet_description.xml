@@ -1,0 +1,20 @@
+<library path="lib/libpointcloud_example_nodelet">
+  <class name="depth_camera_tutorial/pointcloud_example_nodelet"
+	 type="depth_camera_tutorial::PointCloudExampleNodelet"
+	 base_class_type="nodelet::Nodelet">
+  </class>
+</library>
+
+<library path="lib/libdepth_example_nodelet">
+  <class name="depth_camera_tutorial/depth_example_nodelet"
+	 type="depth_camera_tutorial::DepthExampleNodelet"
+	 base_class_type="nodelet::Nodelet">
+  </class>
+</library>
+
+<library path="lib/libcolor_depth_example_nodelet">
+  <class name="depth_camera_tutorial/color_depth_example_nodelet"
+	 type="depth_camera_tutorial::ColorDepthExampleNodelet"
+	 base_class_type="nodelet::Nodelet">
+  </class>
+</library>

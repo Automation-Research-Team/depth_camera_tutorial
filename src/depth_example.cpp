@@ -9,8 +9,10 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
 #include <opencv2/imgproc.hpp>
+#include <nodelet/nodelet.h>
+#include <pluginlib/class_list_macros.h>
 
-namespace threed_camera_tutorial
+namespace depth_camera_tutorial
 {
 /************************************************************************
 *   static functions							*
@@ -31,7 +33,7 @@ class DepthExample
     using image_cp	 = sensor_msgs::ImageConstPtr;
     using cloud_t	 = sensor_msgs::PointCloud2;
     using cloud_p	 = sensor_msgs::PointCloud2Ptr;
-    
+
   public:
 		DepthExample(ros::NodeHandle& nh)			;
 
@@ -41,7 +43,7 @@ class DepthExample
     template <class T>
     void	create_cloud_from_depth(const image_cp& depth,
 					const camera_info_cp& camera_info);
-    
+
   private:
     image_transport::ImageTransport	_it;
     image_transport::CameraSubscriber	_camera_sub;
@@ -75,7 +77,7 @@ DepthExample::camera_cb(const image_cp& depth,
 	ROS_ERROR_STREAM("Unknown depth type[" << depth->encoding << ']');
 	return;
     }
-    
+
     _cloud_pub.publish(_cloud);
 }
 
@@ -144,7 +146,31 @@ DepthExample::create_cloud_from_depth(const image_cp& depth,
 	}
     }
 }
-}	// namespace threed_camera_tutorial
+
+/************************************************************************
+*  class DepthExampleNodelet						*
+************************************************************************/
+class DepthExampleNodelet : public nodelet::Nodelet
+{
+  public:
+			DepthExampleNodelet()				{}
+
+    virtual void	onInit()					;
+
+  private:
+    boost::shared_ptr<DepthExample>	_node;
+};
+
+void
+DepthExampleNodelet::onInit()
+{
+    NODELET_INFO("depth_camera_tutorial::DepthExampleNodelet::onInit()");
+    _node.reset(new DepthExample(getPrivateNodeHandle()));
+}
+}	// namespace depth_camera_tutorial
+
+PLUGINLIB_EXPORT_CLASS(depth_camera_tutorial::DepthExampleNodelet,
+		       nodelet::Nodelet);
 
 /************************************************************************
 *   global functions							*
@@ -157,7 +183,7 @@ main(int argc, char* argv[])
     try
     {
 	ros::NodeHandle				nh("~");
-	threed_camera_tutorial::DepthExample	example(nh);
+	depth_camera_tutorial::DepthExample	example(nh);
 
 	ros::spin();
     }
@@ -169,4 +195,3 @@ main(int argc, char* argv[])
 
     return 0;
 }
-

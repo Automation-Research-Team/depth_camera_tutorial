@@ -12,8 +12,10 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
 #include <opencv2/imgproc.hpp>
+#include <nodelet/nodelet.h>
+#include <pluginlib/class_list_macros.h>
 
-namespace threed_camera_tutorial
+namespace depth_camera_tutorial
 {
 /************************************************************************
 *   static functions							*
@@ -23,7 +25,7 @@ template <class T>
 inline float	to_meters(T depth)		{ return depth; }
 template <>
 inline float	to_meters(uint16_t depth)	{ return 0.001f * depth; }
-    
+
 /************************************************************************
 *   class ColorDepthExample						*
 ************************************************************************/
@@ -38,7 +40,7 @@ class ColorDepthExample
     using cloud_p	 = sensor_msgs::PointCloud2Ptr;
     using sync_t	 = message_filters::TimeSynchronizer<
 				image_t, image_t, camera_info_t>;
-    
+
   public:
 		ColorDepthExample(ros::NodeHandle& nh)			;
 
@@ -51,7 +53,7 @@ class ColorDepthExample
 		    const image_cp& color,
 		    const image_cp& depth,
 		    const camera_info_cp& camera_info)			;
-    
+
   private:
     image_transport::ImageTransport		_it;
     image_transport::SubscriberFilter		_color_sub;
@@ -85,7 +87,7 @@ ColorDepthExample::camera_cb(const image_cp& color,
 	ROS_ERROR_STREAM("Unknown color encoding[" << color->encoding << ']');
 	return;
     }
-    
+
     if (depth->encoding == sensor_msgs::image_encodings::TYPE_16UC1)
     {
 	create_cloud_from_color_and_depth<uint16_t>(color, depth, camera_info);
@@ -180,7 +182,31 @@ ColorDepthExample::create_cloud_from_color_and_depth(
 	}
     }
 }
-}	// namespace threed_camera_tutorial
+
+/************************************************************************
+*  class ColorDepthExampleNodelet					*
+************************************************************************/
+class ColorDepthExampleNodelet : public nodelet::Nodelet
+{
+  public:
+			ColorDepthExampleNodelet()			{}
+
+    virtual void	onInit()					;
+
+  private:
+    boost::shared_ptr<ColorDepthExample>	_node;
+};
+
+void
+ColorDepthExampleNodelet::onInit()
+{
+    NODELET_INFO("depth_camera_tutorial::ColorDepthExampleNodelet::onInit()");
+    _node.reset(new ColorDepthExample(getPrivateNodeHandle()));
+}
+}	// namespace depth_camera_tutorial
+
+PLUGINLIB_EXPORT_CLASS(depth_camera_tutorial::ColorDepthExampleNodelet,
+		       nodelet::Nodelet);
 
 /************************************************************************
 *   global functions							*
@@ -193,7 +219,7 @@ main(int argc, char* argv[])
     try
     {
 	ros::NodeHandle					nh("~");
-	threed_camera_tutorial::ColorDepthExample	example(nh);
+	depth_camera_tutorial::ColorDepthExample	example(nh);
 
 	ros::spin();
     }
@@ -205,4 +231,3 @@ main(int argc, char* argv[])
 
     return 0;
 }
-

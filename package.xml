@@ -2,7 +2,7 @@
 <package format="2">
   <name>depth_camera_tutorial</name>
   <version>1.0.0</version>
-  <description>Sample package for processing 3D cameras</description>
+  <description>Sample package for processing outputs from depth cameras</description>
 
   <maintainer email="t.ueshiba@aist.go.jp">Toshio UESHIBA</maintainer>
   <license>BSD</license>
@@ -12,4 +12,10 @@
   <depend>roscpp</depend>
   <depend>image_transport</depend>
   <depend>sensor_msgs</depend>
+
+  <!-- Required only for supporting nodelet -->
+  <depend>nodelet</depend>
+  <export>
+    <nodelet plugin="${prefix}/nodelet_description.xml"/>
+  </export>
 </package>

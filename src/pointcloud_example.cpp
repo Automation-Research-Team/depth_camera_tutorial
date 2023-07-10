@@ -8,8 +8,10 @@
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
+#include <nodelet/nodelet.h>
+#include <pluginlib/class_list_macros.h>
 
-namespace threed_camera_tutorial
+namespace depth_camera_tutorial
 {
 /************************************************************************
 *   class PointCloudExample						*
@@ -20,7 +22,7 @@ class PointCloudExample
     using cloud_cp = sensor_msgs::PointCloud2ConstPtr;
     using image_t  = sensor_msgs::Image;
     using image_p  = sensor_msgs::ImagePtr;
-    
+
   public:
 		PointCloudExample(ros::NodeHandle& nh)			;
 
@@ -92,7 +94,31 @@ PointCloudExample::cloud_cb(const cloud_cp& cloud)
   // Publish color image.
     _color_pub.publish(_color);
 }
-}	// namespace threed_camera_tutorial
+
+/************************************************************************
+*  class PointCloudExampleNodelet					*
+************************************************************************/
+class PointCloudExampleNodelet : public nodelet::Nodelet
+{
+  public:
+			PointCloudExampleNodelet()			{}
+
+    virtual void	onInit()					;
+
+  private:
+    boost::shared_ptr<PointCloudExample>	_node;
+};
+
+void
+PointCloudExampleNodelet::onInit()
+{
+    NODELET_INFO("depth_camera_tutorial::PointCloudExampleNodelet::onInit()");
+    _node.reset(new PointCloudExample(getPrivateNodeHandle()));
+}
+}	// namespace depth_camera_tutorial
+
+PLUGINLIB_EXPORT_CLASS(depth_camera_tutorial::PointCloudExampleNodelet,
+		       nodelet::Nodelet);
 
 /************************************************************************
 *   global functions							*
@@ -105,7 +131,7 @@ main(int argc, char* argv[])
     try
     {
 	ros::NodeHandle					nh("~");
-	threed_camera_tutorial::PointCloudExample	example(nh);
+	depth_camera_tutorial::PointCloudExample	example(nh);
 
 	ros::spin();
     }
@@ -117,4 +143,3 @@ main(int argc, char* argv[])
 
     return 0;
 }
-
