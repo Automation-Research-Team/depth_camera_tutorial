@@ -33,15 +33,13 @@ class PointCloudExample
     const ros::Subscriber		_cloud_sub;
     image_transport::ImageTransport	_it;
     const image_transport::Publisher	_color_pub;
-    const image_p			_color;
 };
 
 PointCloudExample::PointCloudExample(ros::NodeHandle& nh)
     :_cloud_sub(nh.subscribe("/pointcloud", 1,
 			     &PointCloudExample::cloud_cb, this)),
      _it(nh),
-     _color_pub(_it.advertise("color", 1)),
-     _color(new image_t)
+     _color_pub(_it.advertise("color", 1))
 {
 }
 
@@ -65,22 +63,23 @@ PointCloudExample::cloud_cb(const cloud_cp& cloud)
     }
 
   // Setup fields in the color image and allocate data buffer.
-    _color->header	 = cloud->header;
-    _color->height	 = cloud->height;
-    _color->width	 = cloud->width;
-    _color->encoding	 = sensor_msgs::image_encodings::RGB8;
-    _color->is_bigendian = false;
-    _color->step	 = _color->width * 3*sizeof(uint8_t);
-    _color->data.resize(_color->height * _color->step);
+    const image_p	color(new image_t);
+    color->header	= cloud->header;
+    color->height	= cloud->height;
+    color->width	= cloud->width;
+    color->encoding	= sensor_msgs::image_encodings::RGB8;
+    color->is_bigendian = false;
+    color->step		= color->width * 3*sizeof(uint8_t);
+    color->data.resize(color->height * color->step);
 
   // Extract color information from each point in the input cloud.
     sensor_msgs::PointCloud2ConstIterator<uint8_t>	bgr(*cloud, "rgb");
-    for (uint32_t v = 0; v < _color->height; ++v)
+    for (uint32_t v = 0; v < color->height; ++v)
     {
-	auto	rgb = reinterpret_cast<uint8_t*>(_color->data.data()
-						 + v*_color->step);
+	auto	rgb = reinterpret_cast<uint8_t*>(color->data.data()
+						 + v*color->step);
 
-	for (uint32_t u = 0; u < _color->width; ++u)
+	for (uint32_t u = 0; u < color->width; ++u)
 	{
 	    rgb[0] = bgr[2];
 	    rgb[1] = bgr[1];
@@ -92,7 +91,7 @@ PointCloudExample::cloud_cb(const cloud_cp& cloud)
     }
 
   // Publish color image.
-    _color_pub.publish(_color);
+    _color_pub.publish(color);
 }
 
 /************************************************************************

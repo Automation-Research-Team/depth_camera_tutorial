@@ -33,6 +33,7 @@ class DepthExample
     using image_cp	 = sensor_msgs::ImageConstPtr;
     using cloud_t	 = sensor_msgs::PointCloud2;
     using cloud_p	 = sensor_msgs::PointCloud2Ptr;
+    using cloud_cp	 = sensor_msgs::PointCloud2ConstPtr;
 
   public:
 		DepthExample(ros::NodeHandle& nh)			;
@@ -41,22 +42,20 @@ class DepthExample
     void	camera_cb(const image_cp& depth,
 			  const camera_info_cp& camera_info)		;
     template <class T>
-    void	create_cloud_from_depth(const image_cp& depth,
+    cloud_cp	create_cloud_from_depth(const image_cp& depth,
 					const camera_info_cp& camera_info);
 
   private:
     image_transport::ImageTransport	_it;
     image_transport::CameraSubscriber	_camera_sub;
     const ros::Publisher		_cloud_pub;
-    const cloud_p			_cloud;
 };
 
 DepthExample::DepthExample(ros::NodeHandle& nh)
     :_it(nh),
      _camera_sub(_it.subscribeCamera("/depth", 1,
 				     &DepthExample::camera_cb, this)),
-     _cloud_pub(nh.advertise<cloud_t>("pointcloud", 1)),
-     _cloud(new cloud_t)
+     _cloud_pub(nh.advertise<cloud_t>("pointcloud", 1))
 {
 }
 
@@ -66,27 +65,26 @@ DepthExample::camera_cb(const image_cp& depth,
 {
     if (depth->encoding == sensor_msgs::image_encodings::TYPE_16UC1)
     {
-	create_cloud_from_depth<uint16_t>(depth, camera_info);
+	_cloud_pub.publish(create_cloud_from_depth<uint16_t>(depth,
+							     camera_info));
     }
     else if (depth->encoding == sensor_msgs::image_encodings::TYPE_32FC1)
     {
-	create_cloud_from_depth<float>(depth, camera_info);
+	_cloud_pub.publish(create_cloud_from_depth<float>(depth, camera_info));
     }
     else
     {
 	ROS_ERROR_STREAM("Unknown depth type[" << depth->encoding << ']');
-	return;
     }
-
-    _cloud_pub.publish(_cloud);
 }
 
-template <class T> void
+template <class T> DepthExample::cloud_cp
 DepthExample::create_cloud_from_depth(const image_cp& depth,
 				      const camera_info_cp& camera_info)
 {
   // Setup fields for 3D coordinates of each 3D point.
-    sensor_msgs::PointCloud2Modifier	modifier(*_cloud);
+    const cloud_p			cloud(new cloud_t);
+    sensor_msgs::PointCloud2Modifier	modifier(*cloud);
     modifier.setPointCloud2Fields(3,
 				  "x", 1, sensor_msgs::PointField::FLOAT32,
 				  "y", 1, sensor_msgs::PointField::FLOAT32,
@@ -94,12 +92,12 @@ DepthExample::create_cloud_from_depth(const image_cp& depth,
     modifier.resize(depth->height * depth->width);
 
   // Setup header and size of the output cloud.
-    _cloud->header	 = depth->header;
-    _cloud->height	 = depth->height;
-    _cloud->width	 = depth->width;
-    _cloud->row_step	 = _cloud->width * _cloud->point_step;
-    _cloud->is_bigendian = false;
-    _cloud->is_dense	 = false;		// _cloud->height is not one.
+    cloud->header	 = depth->header;
+    cloud->height	 = depth->height;
+    cloud->width	 = depth->width;
+    cloud->row_step	 = cloud->width * cloud->point_step;
+    cloud->is_bigendian = false;
+    cloud->is_dense	 = false;		// cloud->height is not one.
 
   // Convert camera calibration matrix K and lens distortions D
   // to OpenCV's matrix format.
@@ -109,15 +107,15 @@ DepthExample::create_cloud_from_depth(const image_cp& depth,
     std::copy_n(std::begin(camera_info->D), 4, D.begin());
 
   // Allocate line buffers for pixel and canonical image coordinates.
-    cv::Mat_<cv::Point2f>	uv(_cloud->width, 1), xy(_cloud->width, 1);
-    for (uint32_t u = 0; u < _cloud->width; ++u)
+    cv::Mat_<cv::Point2f>	uv(cloud->width, 1), xy(cloud->width, 1);
+    for (uint32_t u = 0; u < cloud->width; ++u)
 	uv(u).x = u;			// Setup horizontal coodinates.
 
   // Set 3D coordinates for each point in the output cloud.
-    sensor_msgs::PointCloud2Iterator<float>	xyz(*_cloud, "x");
-    for (uint32_t v = 0; v < _cloud->height; ++v)
+    sensor_msgs::PointCloud2Iterator<float>	xyz(*cloud, "x");
+    for (uint32_t v = 0; v < cloud->height; ++v)
     {
-	for (uint32_t u = 0; u < _cloud->width; ++u)
+	for (uint32_t u = 0; u < cloud->width; ++u)
 	    uv(u).y = v;		// Setup vertical coodinates.
 
       // Convert pixel coordinates (u, v) in the input depth image
@@ -126,7 +124,7 @@ DepthExample::create_cloud_from_depth(const image_cp& depth,
 
 	auto	p = reinterpret_cast<const T*>(depth->data.data()
 					       + v*depth->step);
-	for (uint32_t u = 0; u < _cloud->width; ++u)
+	for (uint32_t u = 0; u < cloud->width; ++u)
 	{
 	    const auto	d = to_meters<T>(*p++);		// depth in meters
 
@@ -145,6 +143,8 @@ DepthExample::create_cloud_from_depth(const image_cp& depth,
 	    ++xyz;
 	}
     }
+
+    return cloud;
 }
 
 /************************************************************************

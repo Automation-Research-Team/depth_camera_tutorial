@@ -14,10 +14,10 @@ depth_camera_tutorial
 多くのdepthカメラは，depthセンサとcolor（あるいはgrey）センサの両方を備える．通常両者は別のハードウェアである（[Realsense](https://www.intel.com/content/www/us/en/architecture-and-technology/realsense-overview.html)など）が，同じハードウェアで兼ねる場合もある（[PhoXi](https://www.photoneo.com/phoxi-3d-scanner)など）．
 
 depthカメラのROSドライバは，
-- **depth画像**: [sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型，カメラ中心から観測対象までの光軸に沿った距離を画素値とする二次元配列
-- **depthセンサのカメラパラメータ**: [sensor_msgs/CameraInfo](https://docs.ros.org/en/api/sensor_msgs/html/msg/CameraInfo.html)型
-- **color画像**: [sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型，観測対象のカラーを画素値とする二次元配列
-- **colorセンサのカメラパラメータ**: [sensor_msgs/CameraInfo](https://docs.ros.org/en/api/sensor_msgs/html/msg/CameraInfo.html)型
+- **depth画像**: [sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型．カメラ中心から観測対象までの光軸に沿った距離を画素値とする二次元配列
+- **depthセンサのカメラパラメータ**: [sensor_msgs/CameraInfo](https://docs.ros.org/en/api/sensor_msgs/html/msg/CameraInfo.html)型．水平/垂直方向の焦点距離や画像主点など
+- **color画像**: [sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型．観測対象のカラーを画素値とする二次元配列
+- **colorセンサのカメラパラメータ**: [sensor_msgs/CameraInfo](https://docs.ros.org/en/api/sensor_msgs/html/msg/CameraInfo.html)型．水平/垂直方向の焦点距離や画像主点など
 - **depth画像とカメラパラメータから計算された3D点から成るpointcloud**: [sensor_msgs/PointCloud2](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud2.html)型
 
 を出力する．`sensor_msgs/PointCloud2`型のpointcloudの各点には，その3D座標値のほか，オプションとしてカラー値や法線を表す3Dベクトルを格納することができる．
@@ -46,6 +46,19 @@ depth値を`float`型で出力するドライバが大半であるが，[オリ�
 [message_filters](http://wiki.ros.org/message_filters)
 
 ### 1.5 pointcloudとdepth画像のどちらを選ぶか？
+複数のROSノード間でdepthデータを交換する場合，pointcloud形式とdepth画像形式のいずれかを選択できる．両者の得失は，以下のとおりである．
+
+pointcloudの場合
+- depth値からの3D座標の計算はカメラドライバに任せることができる
+- `organized pointcloud`を選んだ場合，データ総量はdepth画像よりも大きくなり，通信の負担が増す
+- カラー情報を含めることができるが，depth値のない無効画素におけるカラー値は失われる
+
+一方，depth画像の場合
+- ユーザプログラムの中でdepth値から3D座標を計算する必要がある
+- depth画像とカメラパラメータの両方をやりとりする必要がある
+- データ総量はpointcloudよりも小さく，通信の負担が軽い
+- [image_transport](http://wiki.ros.org/image_transport)を使えば，画像情報を圧縮して通信の負担を軽減できる
+- カラー情報が必要な場合は，カラー画像を別途やりとりする必要がある．
 ## 2. パッケージのビルド
 まず`OpenCV`をインストールしてから次のようにダウンロード，ビルドする．
 ```
@@ -56,7 +69,7 @@ $ catkin build detph_camera_tutorial
 サンプルプログラムを動かすためには，depthカメラとして[Realsense](https://www.intel.com/content/www/us/en/architecture-and-technology/realsense-overview.html)の任意の機種またはPhotoneo社の任意の機種のいずれかが必要である．
 ## 3. サンプルプログラム
 ### 3.1 pointcloudトピックのsubscribeとその処理
-`pointcloud_example`は，depthカメラからpointcloudを入力し，color情報を取り出して2次元画像として出力する．
+[pointcloud_example](src/pointcloud_example.cpp)は，depthカメラからpointcloudを入力し，color情報を取り出して2次元画像として出力する．
 - **入力トピック**: depthカメラからのpointcloud([sensor_msgs/PointCloud2](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud2.html)型)
 - **出力トピック**: pointcloud中の各点に付与されたcolor情報から成る2次元画像([sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型)
 
@@ -69,5 +82,19 @@ $ roslaunch depth_camera_tutorial run.launch prog:=pointcloud_example [camera_na
 - pointcloudの`fields`に`rgb`という名前のフィールドがあるか[チェック](src/pointcloud_example.cpp#L59-61)して，color情報を含むことを確認
 - [sensor_msgs::PointCloud2ConstIterator< T >](http://docs.ros.org/en/melodic/api/sensor_msgs/html/classsensor__msgs_1_1PointCloud2ConstIterator.html)を介してpointcloud中の3D点の`rgb`フィールドにアクセス([see code](src/pointcloud_example.cpp#L77))
 - `rgb`フィールド中のcolorコンポーネントの並びは，下位バイトから`b`, `g`, `r`の順であることに注意([see code](src/pointcloud_example.cpp#L85-87))
-- [image_transport](http://wiki.ros.org/image_transport)を用いて生成された[publisher](src/pointcloud_example.cpp#L42-43)を介して，2次元color画像を[publish](src/pointcloud_example.cpp#L95)
-- color画像のメンバ変数`_color`は，`sensor_msgs::Image`型ではなく，`sensor_msg::ImagePtr`型になっており([see code](src/pointcloud_example.cpp#L36))，これは`boost::shared_ptr<sensor_msgs::Image>`の別名である．`shared_ptr`を介して[画像のメモリ領域をheapから獲得](src/pointcloud_example.cpp#L44)することにより，同一プロセス内で画像をpublish/subscribeする時にserialize/deserializeを省略することができ([see here](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#Intraprocess_Publishing))，パフォーマンスが向上する．
+- [image_transport](http://wiki.ros.org/image_transport)を用いて生成された[publisher](src/pointcloud_example.cpp#L42-43)を介して，2次元color画像を[publish](src/pointcloud_example.cpp#L94)
+- color画像を表す変数`color`は，`sensor_msgs::Image`型ではなく，`sensor_msg::ImagePtr`型になっており([see code](src/pointcloud_example.cpp#L66))，これは`boost::shared_ptr<sensor_msgs::Image>`の別名である．`shared_ptr`を介して画像のメモリ領域をheapから獲得することにより，同一プロセス内で画像をpublish/subscribeする時にserialize/deserializeを省略することができ([see here](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#Intraprocess_Publishing))，パフォーマンスが向上する．
+- `shared_ptr`を介して保持されたカラー画像の内容をpublish後に変更することはできない([see here](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#Intraprocess_Publishing))．そのため，変数`color`が指すメモリ領域は，各フレーム毎にheapから獲得しなければならない．
+
+### 3.2 depth画像トピックのsubscribeと3D座標値の計算
+[depth_example](src/depth_example.cpp)は，depthカメラからdepth画像とカメラパラメータを入力し，各画素の3D座標を計算してpointcloudとして出力する．
+- **入力トピック**: depthカメラからのdepth画像([sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型)とそのカメラパラメータ([sensor_msgs/CameraInfo](https://docs.ros.org/en/api/sensor_msgs/html/msgCameraInfo.html)型)
+- **出力トピック**: depth画像とカメラパラメータから計算されたpointcloud([sensor_msgs/PointCloud2](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud2.html)型)
+
+次のように起動する．
+```
+$ roslaunch depth_camera_tutorial run.launch prog:=depth_example [camera_name:=realsense|phoxi]
+```
+プログラムの要点は，以下のとおりである．
+
+## 4. nodeletを用いた同一プロセス内でのゼロコピー通信
