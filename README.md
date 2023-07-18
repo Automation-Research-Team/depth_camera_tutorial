@@ -65,9 +65,9 @@ $ catkin build detph_camera_tutorial
 $ roslaunch depth_camera_tutorial run.launch prog:=pointcloud_example [camera_name:=realsense|phoxi]
 ```
 プログラムの要点は，以下のとおりである．
-- subscribeしたpointcloudの`height`が`1`でないことを[チェック](https://gitlab.com/art-aist/depth_camera_tutorial/-/blob/master/src/pointcloud_example.cpp#L50)して，*organized* pointcloudであることを確認
-- pointcloudの`fields`に`rgb`という名前のフィールドがあるか[チェック](https://gitlab.com/art-aist/depth_camera_tutorial/-/blob/master/src/pointcloud_example.cpp#L57-59)して，color情報を含むことを確認
-- [sensor_msgs::PointCloud2ConstIterator< T >](http://docs.ros.org/en/melodic/api/sensor_msgs/html/classsensor__msgs_1_1PointCloud2ConstIterator.html)を介してpointcloud中の3D点の`rgb`フィールドにアクセス([see code](https://gitlab.com/art-aist/depth_camera_tutorial/-/blob/master/src/pointcloud_example.cpp#L75))
-- `rgb`フィールド中のcolorコンポーネントの並びは，下位バイトから`b`, `g`, `r`の順であることに注意([see code](https://gitlab.com/art-aist/depth_camera_tutorial/-/blob/master/src/pointcloud_example.cpp#L83-85))
-- [image_transport](http://wiki.ros.org/image_transport)を用いて生成された[publisher](https://gitlab.com/art-aist/depth_camera_tutorial/-/blob/master/src/pointcloud_example.cpp#L40-41)を介して，2次元color画像を[publish](https://gitlab.com/art-aist/depth_camera_tutorial/-/blob/master/src/pointcloud_example.cpp#L93)
-- color画像のメンバ変数`_color`は，`sensor_msgs::Image`型ではなく，`sensor_msg::ImagePtr`型になっており([see code](https://gitlab.com/art-aist/depth_camera_tutorial/-/blob/master/src/pointcloud_example.cpp#L34))，これは`boost::shared_ptr<sensor_msgs::Image>`の別名である．`shared_ptr`を介して[画像のメモリ領域をheapから獲得](https://gitlab.com/art-aist/depth_camera_tutorial/-/blob/master/src/pointcloud_example.cpp#L42)することにより，同一プロセス内で画像をpublish/subscribeする時にserialize/deserializeを省略することができ([see here](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#Intraprocess_Publishing))，パフォーマンスが向上する．
+- subscribeしたpointcloudの`height`が`1`でないことを[チェック](src/pointcloud_example.cpp#L52)して，*organized* pointcloudであることを確認
+- pointcloudの`fields`に`rgb`という名前のフィールドがあるか[チェック](src/pointcloud_example.cpp#L59-61)して，color情報を含むことを確認
+- [sensor_msgs::PointCloud2ConstIterator< T >](http://docs.ros.org/en/melodic/api/sensor_msgs/html/classsensor__msgs_1_1PointCloud2ConstIterator.html)を介してpointcloud中の3D点の`rgb`フィールドにアクセス([see code](src/pointcloud_example.cpp#L77))
+- `rgb`フィールド中のcolorコンポーネントの並びは，下位バイトから`b`, `g`, `r`の順であることに注意([see code](src/pointcloud_example.cpp#L85-87))
+- [image_transport](http://wiki.ros.org/image_transport)を用いて生成された[publisher](src/pointcloud_example.cpp#L42-43)を介して，2次元color画像を[publish](src/pointcloud_example.cpp#L95)
+- color画像のメンバ変数`_color`は，`sensor_msgs::Image`型ではなく，`sensor_msg::ImagePtr`型になっており([see code](src/pointcloud_example.cpp#L36))，これは`boost::shared_ptr<sensor_msgs::Image>`の別名である．`shared_ptr`を介して[画像のメモリ領域をheapから獲得](src/pointcloud_example.cpp#L44)することにより，同一プロセス内で画像をpublish/subscribeする時にserialize/deserializeを省略することができ([see here](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#Intraprocess_Publishing))，パフォーマンスが向上する．
