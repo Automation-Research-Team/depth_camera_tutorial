@@ -82,7 +82,7 @@ $ roslaunch depth_camera_tutorial run.launch prog:=pointcloud_example [camera_na
 - pointcloudの`fields`に`rgb`という名前のフィールドがあるか[チェック](src/pointcloud_example.cpp#L57-59)して，color情報を含むことを確認
 - [sensor_msgs::PointCloud2ConstIterator< T >](http://docs.ros.org/en/melodic/api/sensor_msgs/html/classsensor__msgs_1_1PointCloud2ConstIterator.html)を介してpointcloud中の3D点の`rgb`フィールドにアクセス([see code](src/pointcloud_example.cpp#L76))
 - `rgb`フィールド中のcolorコンポーネントの並びは，下位バイトから`b`, `g`, `r`の順であることに注意([see code](src/pointcloud_example.cpp#L84-86))
-- [image_transport](http://wiki.ros.org/image_transport)を用いて生成された[publisher](src/pointcloud_example.cpp#L42-43)を介して，2次元color画像を[publish](src/pointcloud_example.cpp#L94)
+- [image_transport](http://wiki.ros.org/image_transport)を用いて生成された[publisher](src/pointcloud_example.cpp#L41-42)を介して，2次元color画像を[publish](src/pointcloud_example.cpp#L94)
 - color画像を表す変数`color`は，`sensor_msgs::Image`型ではなく，`sensor_msg::ImagePtr`型になっており([see code](src/pointcloud_example.cpp#L66))，これは`boost::shared_ptr<sensor_msgs::Image>`の別名である．`shared_ptr`を介して画像のメモリ領域をheapから獲得することにより，同一プロセス内で画像をpublish/subscribeする時にserialize/deserializeを省略することができ([see here](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#Intraprocess_Publishing))，パフォーマンスが向上する．
 - `shared_ptr`を介して保持されたカラー画像の内容をpublish後に変更することはできない([see here](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#Intraprocess_Publishing))．そのため，変数`color`が指すメモリ領域は，各フレーム毎にheapから獲得しなければならない．
 

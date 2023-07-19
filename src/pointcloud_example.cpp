@@ -95,7 +95,7 @@ PointCloudExample::cloud_cb(const cloud_cp& cloud)
 }
 
 /************************************************************************
-*  class PointCloudExampleNodelet					*
+*  class PointCloudExampleNodelet: requried only for building nodelets	*
 ************************************************************************/
 class PointCloudExampleNodelet : public nodelet::Nodelet
 {
@@ -116,11 +116,12 @@ PointCloudExampleNodelet::onInit()
 }
 }	// namespace depth_camera_tutorial
 
+// required only for building nodelets
 PLUGINLIB_EXPORT_CLASS(depth_camera_tutorial::PointCloudExampleNodelet,
 		       nodelet::Nodelet);
 
 /************************************************************************
-*   global functions							*
+*   main(): required only for building conventional(non-nodelet) nodes	*
 ************************************************************************/
 int
 main(int argc, char* argv[])

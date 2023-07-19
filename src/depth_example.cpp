@@ -148,7 +148,7 @@ DepthExample::create_cloud_from_depth(const image_cp& depth,
 }
 
 /************************************************************************
-*  class DepthExampleNodelet						*
+*  class DepthExampleNodelet: requried only for building nodelets	*
 ************************************************************************/
 class DepthExampleNodelet : public nodelet::Nodelet
 {
@@ -169,11 +169,12 @@ DepthExampleNodelet::onInit()
 }
 }	// namespace depth_camera_tutorial
 
+// required only for building nodelets
 PLUGINLIB_EXPORT_CLASS(depth_camera_tutorial::DepthExampleNodelet,
 		       nodelet::Nodelet);
 
 /************************************************************************
-*   global functions							*
+*   main(): required only for building conventional(non-nodelet) nodes	*
 ************************************************************************/
 int
 main(int argc, char* argv[])
