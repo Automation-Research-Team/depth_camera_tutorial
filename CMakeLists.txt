@@ -112,6 +112,7 @@ add_dependencies(depth_example_nodelet
 target_link_libraries(depth_example_nodelet
   ${catkin_LIBRARIES}
   ${roscpp_LIBRARIES}
+  ${OpenCV_LIBRARIES}
 )
 
 #
