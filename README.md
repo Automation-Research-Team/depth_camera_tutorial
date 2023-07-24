@@ -75,7 +75,7 @@ $ catkin build detph_camera_tutorial
 
 次のように起動する．
 ```
-$ roslaunch depth_camera_tutorial run.launch prog:=pointcloud_example [camera_name:=realsense|phoxi]
+$ roslaunch depth_camera_tutorial run.launch prog:=pointcloud_example camera_name:=[realsense|phoxi]
 ```
 プログラムの要点は，以下のとおりである．
 - subscribeしたpointcloudの`height`が`1`でないことを[チェック](src/pointcloud_example.cpp#L45)して，*organized* pointcloudであることを確認
@@ -89,32 +89,78 @@ $ roslaunch depth_camera_tutorial run.launch prog:=pointcloud_example [camera_na
 ### 3.2 depth_example
 [depth_example](src/depth_example.cpp)は，depth画像の各画素を3D点に変換する方法を示すサンプルプログラムである．具体的には，depthカメラからdepth画像とカメラパラメータを入力し，各画素の3D座標を計算してpointcloudとして出力する．
 - **入力トピック**: depthカメラからのdepth画像([sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型)とそのカメラパラメータ([sensor_msgs/CameraInfo](https://docs.ros.org/en/api/sensor_msgs/html/msgCameraInfo.html)型)
-- **出力トピック**: depth画像とカメラパラメータから計算されたpointcloud([sensor_msgs/PointCloud2](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud2.html)型)
+- **出力トピック**: 2つの入力トピックから計算されたpointcloud([sensor_msgs/PointCloud2](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud2.html)型)
 
 次のように起動する．
 ```
-$ roslaunch depth_camera_tutorial run.launch prog:=depth_example [camera_name:=realsense|phoxi]
+$ roslaunch depth_camera_tutorial run.launch prog:=depth_example camera_name:=[realsense|phoxi]
 ```
 
-subscribeされるdepth画像とカメラパラメータの2つのトピックは，時間的に同期している必要がある．一般に，ROSにおいて同期した複数のトピックをsubscribeするには
-[message_filters](http://wiki.ros.org/message_filters)を使う．しかし，[sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型と[sensor_msgs/CameraInfo](https://docs.ros.org/en/api/sensor_msgs/html/msgCameraInfo.html)型の2つトピックをsubscruibeする場合は，[image_transport](http://wiki.ros.org/image_transport)パッケージに含まれる[CameraSubscriber](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1CameraSubscriber.html)を使用するのが便利なので，ここではそれを用いて実装している．
+subscribeされるdepth画像とカメラパラメータの2つのトピックは，時間的に同期している必要がある．一般に，ROSにおいて複数のトピックを同期させた上でsubscribeするには
+[message_filters](http://wiki.ros.org/message_filters)を使う．しかし，[sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型と[sensor_msgs/CameraInfo](https://docs.ros.org/en/api/sensor_msgs/html/msgCameraInfo.html)型の2つトピックをsubscribeする場合は，[image_transport](http://wiki.ros.org/image_transport)パッケージに含まれる[CameraSubscriber](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1CameraSubscriber.html)を使用するのが便利なので，ここではそれを用いて実装している．
 
 [CameraSubscriber](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1CameraSubscriber.html)は，depth画像に限らず，一般のモノクロ/カラー画像をカメラパラメータと共にsubscribeする時に使用される．
 
 プログラムの要点は，以下のとおりである．
+- [image_transport](http://wiki.ros.org/image_transport)を用いて[CameraSubscriber](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1CameraSubscriber.html)を生成([see code](src/depth_example.cpp#49-51))．カメラパラメータのトピック名が指定されていないが，画像トピックが属する名前空間にある`camera_info`というトピックが自動的にsubscribeされる．
+- 入力depth画像の`encoding`フィールドからdepth値の型を判定し，それに応じてpointcloud生成のメンバ関数を呼び出し，結果をpublish([see code](src/depth_example.cpp#60-68))
+- 出力pointcloudの領域を確保し，そのサイズを[設定](src/depth_example.cpp#81-86)．`shared_ptr`を介してメモリ領域をheapから獲得する理由は[pointcloud_example](src/pointcloud_example.cpp)と同様
+- [sensor_msgs::PointCloud2Modifier](http://docs.ros.org/en/melodic/api/sensor_msgs/html/classsensor__msgs_1_1PointCloud2Modifier.html)によってpointcloud中の各点が持つ情報を指定する．これによってpointcloudの内部バッファ領域が確保されるとともに，それにアクセスするための情報がセットされる．ここでは3D座標値のみを指定している([see code](src/depth_example.cpp#92-96))
+- ある画素(u, v)におけるdepth値から3D座標を計算するには，まず(u, v)からレンズ歪を取り除き，さらに画像主点を原点とし焦点距離が`1`である`canonical image coordinates`(x, y)に変換することが必要である．これは，`OpenCV`の[cv::undistortPoints()](https://docs.opencv.org/4.4.0/d9/d0c/group__calib3d.html#ga55c716492470bfe86b0ee9bf3a1f0f7e)を用いて実現する
+- そのために，入力depth画像の1行毎に画素座標の配列`uv`を[作り](src/depth_example.cpp#114-115)，カメラの内部パラメータ行列`K`とレンズ歪パラメータ`D`とともに[cv::undistortPoints()に渡して](src/depth_example.cpp#119)`canonical image coordinates`の配列`xy`を計算する
+- pointcloud中の各点に3D座標を与えるために，[sensor_msgs::PointCloud2Iterator< T >](http://docs.ros.org/en/melodic/api/sensor_msgs/html/classsensor__msgs_1_1PointCloud2Iterator.html)を介して`x`, `y`, `z`フィールドにアクセスする([see code](src/depth_example.cpp#111))
+- depth値が[uint16_t](https://cpprefjp.github.io/reference/cstdint/uint16_t.html)型の場合は[メートル単位に直す](src/depth_example.cpp#125)
+- `xy`にdepth値を乗じて3D点のx, y座標を計算する．z座標はdepth値をそのまま用いる([see code](src/depth_example.cpp#129-131))
+- depth値が`0`の場合は無効画素なので，座標値に[NaN](https://cpprefjp.github.io/reference/limits/numeric_limits/quiet_nan.html)を入れる([see code](src/depth_example.cpp#135-136))
 
 ### 3.3 color_depth_example
 [color_depth_example](src/color_depth_example.cpp)は，color画像とdepth画像を融合して各画素をカラー情報付きの3D点に変換する方法を示すサンプルプログラムである．具体的には，depthカメラからcolor画像，depth画像およびカメラパラメータを入力し，各画素の3D座標を計算するとともにそれにカラー値を付与してカラー情報付きpointcloudとして出力する．
-- **入力トピック**: depthカメラからのcolor画像([sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型)，depth画像([sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型)およびそのカメラパラメータ([sensor_msgs/CameraInfo](https://docs.ros.org/en/api/sensor_msgs/html/msgCameraInfo.html)型)
-- **出力トピック**: color画像，depth画像およびカメラパラメータから計算されたカラー情報付きpointcloud([sensor_msgs/PointCloud2](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud2.html)型)
+- **入力トピック**: depthカメラからのcolor画像とdepth画像([sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型)および後者のカメラパラメータ([sensor_msgs/CameraInfo](https://docs.ros.org/en/api/sensor_msgs/html/msgCameraInfo.html)型)
+- **出力トピック**: 3つの入力トピックから計算されたカラー情報付きpointcloud([sensor_msgs/PointCloud2](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud2.html)型)
 
 次のように起動する．
 ```
 $ roslaunch depth_camera_tutorial run.launch prog:=color_depth_example [camera_name:=realsense|phoxi]
 ```
 
-ここでは，同期したカラー画像，depth画像およびカメラパラメータの3つのtopicをsubscribeする必要があるため，[message_filters](http://wiki.ros.org/message_filters)パッケージに含まれる[message_filters::TimeSynchronizer< M0, M1, M2, M3, M4, M5, M6, M7, M8 >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1TimeSynchronizer.html)を使う．また，カメラパラメータは[message_filters::Subscriber< M >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1Subscriber.html)によってsubscribeする．color画像とdepth画像もこれを用いてsubscribeすることもできるが，[image_transport::SubscriberFilter](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1SubscriberFilter.html)を使うと，画像圧縮により通信の負担を軽減する[image_transfport](http://wiki.ros.org/image_transport)の機能を享受できる．
+ここでは，同期したカラー画像，depth画像およびカメラパラメータの3つのtopicをsubscribeする必要があるため，[message_filters](http://wiki.ros.org/message_filters)パッケージに含まれる[message_filters::TimeSynchronizer< M0, M1, M2, M3, M4, M5, M6, M7, M8 >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1TimeSynchronizer.html)を使う．また，カメラパラメータは[message_filters::Subscriber< M >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1Subscriber.html)によってsubscribeする．color画像とdepth画像もこれを用いてsubscribeできるが，[image_transport::SubscriberFilter](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1SubscriberFilter.html)を使うと，画像圧縮により通信の負担を軽減する[image_transport](http://wiki.ros.org/image_transport)の機能を享受できる．
 
 プログラムの要点は，以下のとおりである．
+- カラー画像とdepth画像のsubscriberを[image_transport::SubscriberFilter](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1SubscriberFilter.html)型で[定義](src/color_depth_example.cpp#54-55)
+- カメラパラメータのsubscriberを[message_filters::Subscriber< M >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1Subscriber.html)型で[定義](src/color_depth_example.cpp#56)
+- 3つの入力トピックを同期させる`synchronizeer`([message_filters::TimeSynchronizer< M0, M1, M2, M3, M4, M5, M6, M7, M8 >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1TimeSynchronizer.html)型)を[定義](src/color_depth_example.cpp#57)
+- `synchronizer`に同期された3つの入力トピックに対するコールバック関数を[設定](src/color_depth_example.cpp#70)
+- depth値から3D座標を計算する方法は[depth_example](src/depth_example.cpp)と同様
+- pointcloud中の各点にカラー情報を与えるために，[sensor_msgs::PointCloud2Iterator< T >](http://docs.ros.org/en/melodic/api/sensor_msgs/html/classsensor__msgs_1_1PointCloud2Iterator.html)を介して`rgb`フィールドにアクセスする([see code](src/color_depth_example.cpp#140))
+- depth値が`0`でない有効画素には[入力カラー画像から得た値を設定](src/color_depth_example.cpp#163-165)
+- 無効画素には[カラー値0を設定](src/color_depth_example.cpp#171)
 
 ## 4. nodeletを用いた同一プロセス内でのゼロコピー通信
+一般に画像やpointcloudのデータ量は大きいので，それらをROSノード間で送受信するのは重い負荷となる．そのため，[roscpp](http://wiki.ros.org/roscpp)には，同一プロセス内でのtopic通信においてデータの受け渡しをそれを指すポインタのやりとりで済ませ，データ実体をコピーしない仕組みが備えられている([see here](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#Intraprocess_Publishing))．[nodelet](http://wiki.ros.org/nodelet)はこれを利用して，複数のROSノードを単一のプロセスにロードしてノード間通信の負荷を大幅に軽減するための基盤を提供する．具体的には，各ノードを共有ライブラリとして実装し，予め起動しておいた`nodelet manager`に動的にロードして各々に個別のスレッドを割り当てて走らせる．
+
+本パッケージのサンプルプログラムは[nodelet](http://wiki.ros.org/nodelet)に対応しており，その使用例にもなっている．[Realsense](https://gitlab.com/art-aist/realsense-ros)や[PhoXi]()のドライバも[nodelet](http://wiki.ros.org/nodelet)に対応しているので，同一ホストでドライバとサンプルプログラムを動かせば，両者の間でゼロコピー通信が実現できる．
+
+### 4.1 nodeletとしての起動方法
+[nodelet](http://wiki.ros.org/nodelet)としてサンプルプログラムを起動するには，次を入力する．
+```
+$ roslaunch depth_camera_tutorial run_nodelet.launch manager:=manager prog:=[pointcloud_example|depth_example|color_depth_example] camera_name:=[realsense|phoxi]
+```
+`manager`という名前の`nodelet manager`が起動され，それにドライバとサンプルプログラムがロードされて実行が開始される．
+
+なお，[nodelet](http://wiki.ros.org/nodelet)として実装されているノードを個別のプロセスとして起動することもできる．そのためには，上記の`manager`の指定を省略すれば良い．
+```
+$ roslaunch depth_camera_tutorial run_nodelet.launch prog:=[pointcloud_example|depth_example|color_depth_example] camera_name:=[realsense|phoxi]
+```
+実装されたnodeletノードにバグがあると，他のノードを巻き込んで`nodelet manager`ごと落ちることがあるので，デバッグ時は個別のプロセスとして起動した方が良い．
+### 4.2 ROSノードのnodeletとしての実装
+[pointcloud_example](src/pointcloud_example.cpp)を例にして，[nodelet](http://wiki.ros.org/nodelet)としてROSノードを実装する方法を説明する．
+- nodeletを使うためのヘッダファイルを[インクルード](src/pointcloud_example.cpp#11-12)
+- nodeletとしてのROSノードを[nodelet::Nodelet](http://docs.ros.org/en/noetic/api/nodelet/html/classnodelet_1_1Nodelet.html)の派生クラスとして[定義](src/pointcloud_example.cpp#95)
+- 定義したクラスの`onInit()`メンバ関数を，[nodelet::Nodelet::getPrivateNodeHandle()](http://docs.ros.org/en/noetic/api/nodelet/html/classnodelet_1_1Nodelet.html)から得たノードハンドルを用いてROSノードを初期化するように[実装](src/pointcloud_example.cpp#106-111)
+- 定義したクラスが動的にロードできるよう，必要な情報を[export](src/pointcloud_example.cpp#115-116)
+
+### 4.3 ビルド設定
+- nodeletノードを共有ライブラリとしてビルドするよう，[CMakeLists.txtに設定](CMakeLists.txt#85-132)
+- nodeletノードを動的にロードするために，共有ライブラリへのパスを[nodelet_description.xml](nodelet_description.xml)に設定
+- nodeletを使うためのパッケージを[package.xmlに追加](package.xml#17)
+- 共有ライブラリへのパスが[nodelet_description.xml](nodelet_description.xml)に書かれていることを示すために，そのファイル名を[package.xmlに登録](package.xml#18-20)
