@@ -31,7 +31,9 @@ depthカメラのROSドライバは，depth画像の各画素を`float`または
 depth値を`float`型で出力するドライバが大半であるが，[オリジナルのRealsense用ドライバ](https://github.com/IntelRealSense/realsense-ros)は[uint16_t](https://cpprefjp.github.io/reference/cstdint/uint16_t.html)型で出力する．この時，最小単位が1mmとなるので，カメラと対象物体の距離が近い(接写)場合，depth値から復元された3D点群に量子化誤差による階段状のアーチファクトが生じることがある．これを避けるために[float型で出力するように修正したドライバ](https://gitlab.com/art-aist/realsense-ros)があるので，接写する場合はこちらを使用することを薦める．
 
 ### 1.3 無効画素の扱い
-一般に，depthカメラで取得したdepth画像には，depth値が得られない無効画素が含まれる．無効画素が生じる原因としては，片方のセンサからしか観測されない3D点（ステレオの場合）やプロジェクタの光が照射されない3D点（coded light patternの場合）などのオクルージョン，黒色物体など反射光の不足等が代表的である．このような無効画素は，トピックメッセージ上で次のように表現される([see here](https://ros.org/reps/rep-0118.html))．
+一般に，depthカメラで取得したdepth画像には，depth値が得られない無効画素が含まれる．無効画素が生じる原因としては，片方のセンサからしか観測されない3D点（ステレオの場合）やプロジェクタの光が照射されない3D点（coded light patternの場合）などのオクルージョン，黒色物体など反射光の不足等が代表的である．
+
+無効画素は，トピックメッセージ上で次のように表現される([see here](https://ros.org/reps/rep-0118.html))．
 - **pointcloud**: [sensor_msgs/PointCloud2](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud2.html)型．x, y, z座標値に[NaN](https://cpprefjp.github.io/reference/limits/numeric_limits/quiet_nan.html)を入れて無効画素を表す
 - **depth画像**: [sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型．depth値に`0`を入れて無効画素を表す
 
@@ -51,7 +53,7 @@ pointcloudの場合
 - `organized pointcloud`を選んだ場合，データ総量はdepth画像よりも大きくなり，通信の負担が増す
 - pointcloud中の各点にカラー情報を含めることができるが，depth値のない無効画素におけるカラー値は失われる
 
-一方，depth画像の場合
+depth画像の場合
 - ユーザプログラムの中でdepth値から3D座標を計算する必要がある
 - depth画像とカメラパラメータの両方を送受信する必要がある
 - データ総量はpointcloudよりも小さく，通信の負担が軽い
@@ -81,8 +83,8 @@ $ roslaunch depth_camera_tutorial run.launch prog:=pointcloud_example [camera_na
 - [sensor_msgs::PointCloud2ConstIterator< T >](http://docs.ros.org/en/melodic/api/sensor_msgs/html/classsensor__msgs_1_1PointCloud2ConstIterator.html)を介してpointcloud中の3D点の`rgb`フィールドにアクセス([see code](src/pointcloud_example.cpp#L71))
 - `rgb`フィールド中のcolorコンポーネントの並びは，下位バイトから`b`, `g`, `r`の順であることに注意([see code](src/pointcloud_example.cpp#L79-81))
 - [image_transport](http://wiki.ros.org/image_transport)を用いて生成された[publisher](src/pointcloud_example.cpp#L36-37)を介して，2次元color画像を[publish](src/pointcloud_example.cpp#L89)
-- color画像を表すローカル変数`color`は，`sensor_msgs::Image`型ではなく，`sensor_msg::ImagePtr`型になっており([see code](src/pointcloud_example.cpp#L61))，これは`boost::shared_ptr<sensor_msgs::Image>`の別名である．`shared_ptr`を介して画像のメモリ領域をheapから獲得することにより，同一プロセス内で画像をpublish/subscribeする時にserialize/deserializeを省略することができ([see here](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#Intraprocess_Publishing))，パフォーマンスが向上する．
-- `shared_ptr`を介して保持されたカラー画像の内容をpublish後に変更することはできない([see here](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#Intraprocess_Publishing))．そのため，変数`color`が指すメモリ領域は，各フレーム毎にheapから獲得しなければならない．
+- color画像を表すローカル変数`color`は，`sensor_msgs::Image`型ではなく，`sensor_msg::ImagePtr`型になっており([see code](src/pointcloud_example.cpp#L61))，これは`boost::shared_ptr<sensor_msgs::Image>`の別名である．`shared_ptr`を介して画像のメモリ領域をheapから獲得することにより，同一プロセス内で画像をpublish/subscribeする時にserialize/deserializeを省略することができ([see here](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#Intraprocess_Publishing))，通信の負担が軽減する．
+- `shared_ptr`を介して保持されたカラー画像の内容をpublish後に変更してはならない([see here](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#Intraprocess_Publishing))．そのため，変数`color`が指すメモリ領域は，各フレーム毎にheapから獲得しなければならない．
 
 ### 3.2 depth_example
 [depth_example](src/depth_example.cpp)は，depth画像の各画素を3D点に変換する方法を示すサンプルプログラムである．具体的には，depthカメラからdepth画像とカメラパラメータを入力し，各画素の3D座標を計算してpointcloudとして出力する．

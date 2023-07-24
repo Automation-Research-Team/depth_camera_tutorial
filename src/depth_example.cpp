@@ -27,22 +27,17 @@ inline float	to_meters(uint16_t depth)	{ return 0.001f * depth; }
 ************************************************************************/
 class DepthExample
 {
-  private:
-    using camera_info_cp = sensor_msgs::CameraInfoConstPtr;
-    using image_cp	 = sensor_msgs::ImageConstPtr;
-    using cloud_t	 = sensor_msgs::PointCloud2;
-    using cloud_p	 = sensor_msgs::PointCloud2Ptr;
-    using cloud_cp	 = sensor_msgs::PointCloud2ConstPtr;
-
   public:
 		DepthExample(ros::NodeHandle& nh)			;
 
   private:
-    void	camera_cb(const image_cp& depth,
-			  const camera_info_cp& camera_info)		;
+    void	camera_cb(const sensor_msgs::ImageConstPtr& depth,
+			  const sensor_msgs::CameraInfoConstPtr& camera_info);
     template <class T>
-    cloud_cp	create_cloud_from_depth(const image_cp& depth,
-					const camera_info_cp& camera_info);
+    sensor_msgs::PointCloud2ConstPtr
+		create_cloud_from_depth(
+			const sensor_msgs::ImageConstPtr& depth,
+			const sensor_msgs::CameraInfoConstPtr& camera_info);
 
   private:
     image_transport::ImageTransport	_it;
@@ -54,13 +49,13 @@ DepthExample::DepthExample(ros::NodeHandle& nh)
     :_it(nh),
      _camera_sub(_it.subscribeCamera("/depth", 1,
 				     &DepthExample::camera_cb, this)),
-     _cloud_pub(nh.advertise<cloud_t>("pointcloud", 1))
+     _cloud_pub(nh.advertise<sensor_msgs::PointCloud2>("pointcloud", 1))
 {
 }
 
 void
-DepthExample::camera_cb(const image_cp& depth,
-			const camera_info_cp& camera_info)
+DepthExample::camera_cb(const sensor_msgs::ImageConstPtr& depth,
+			const sensor_msgs::CameraInfoConstPtr& camera_info)
 {
     if (depth->encoding == sensor_msgs::image_encodings::TYPE_16UC1)
     {
@@ -77,12 +72,13 @@ DepthExample::camera_cb(const image_cp& depth,
     }
 }
 
-template <class T> DepthExample::cloud_cp
-DepthExample::create_cloud_from_depth(const image_cp& depth,
-				      const camera_info_cp& camera_info)
+template <class T> sensor_msgs::PointCloud2ConstPtr
+DepthExample::create_cloud_from_depth(
+		const sensor_msgs::ImageConstPtr& depth,
+		const sensor_msgs::CameraInfoConstPtr& camera_info)
 {
   // Allocate memory for output pointcloud from heap and setup header and size.
-    const cloud_p	cloud(new cloud_t);
+    const sensor_msgs::PointCloud2Ptr	cloud(new sensor_msgs::PointCloud2);
     cloud->header	= depth->header;
     cloud->height	= depth->height;
     cloud->width	= depth->width;

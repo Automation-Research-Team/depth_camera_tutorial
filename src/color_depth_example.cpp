@@ -31,36 +31,31 @@ inline float	to_meters(uint16_t depth)	{ return 0.001f * depth; }
 class ColorDepthExample
 {
   private:
-    using image_t	 = sensor_msgs::Image;
-    using image_cp	 = sensor_msgs::ImageConstPtr;
-    using camera_info_t	 = sensor_msgs::CameraInfo;
-    using camera_info_cp = sensor_msgs::CameraInfoConstPtr;
-    using cloud_t	 = sensor_msgs::PointCloud2;
-    using cloud_p	 = sensor_msgs::PointCloud2Ptr;
-    using cloud_cp	 = sensor_msgs::PointCloud2ConstPtr;
-    using sync_t	 = message_filters::TimeSynchronizer<
-				image_t, image_t, camera_info_t>;
+    using sync_t = message_filters::TimeSynchronizer<sensor_msgs::Image,
+						     sensor_msgs::Image,
+						     sensor_msgs::CameraInfo>;
 
   public:
 		ColorDepthExample(ros::NodeHandle& nh)			;
 
   private:
-    void	camera_cb(const image_cp& color,
-			  const image_cp& depth,
-			  const camera_info_cp& camera_info)		;
+    void	camera_cb(const sensor_msgs::ImageConstPtr& color,
+			  const sensor_msgs::ImageConstPtr& depth,
+			  const sensor_msgs::CameraInfoConstPtr& camera_info);
     template <class T>
-    cloud_cp	create_cloud_from_color_and_depth(
-		    const image_cp& color,
-		    const image_cp& depth,
-		    const camera_info_cp& camera_info)			;
+    sensor_msgs::PointCloud2ConstPtr
+		create_cloud_from_color_and_depth(
+		    const sensor_msgs::ImageConstPtr& color,
+		    const sensor_msgs::ImageConstPtr& depth,
+		    const sensor_msgs::CameraInfoConstPtr& camera_info)	;
 
   private:
-    image_transport::ImageTransport		_it;
-    image_transport::SubscriberFilter		_color_sub;
-    image_transport::SubscriberFilter		_depth_sub;
-    message_filters::Subscriber<camera_info_t>	_camera_info_sub;
-    sync_t					_sync;
-    const ros::Publisher			_cloud_pub;
+    image_transport::ImageTransport			 _it;
+    image_transport::SubscriberFilter			 _color_sub;
+    image_transport::SubscriberFilter			 _depth_sub;
+    message_filters::Subscriber<sensor_msgs::CameraInfo> _camera_info_sub;
+    sync_t						 _sync;
+    const ros::Publisher				 _cloud_pub;
 };
 
 ColorDepthExample::ColorDepthExample(ros::NodeHandle& nh)
@@ -69,16 +64,16 @@ ColorDepthExample::ColorDepthExample(ros::NodeHandle& nh)
      _depth_sub(_it, "/depth", 1),
      _camera_info_sub(nh, "/camera_info", 1),
      _sync(_color_sub, _depth_sub, _camera_info_sub, 1),
-     _cloud_pub(nh.advertise<cloud_t>("pointcloud", 1))
+     _cloud_pub(nh.advertise<sensor_msgs::PointCloud2>("pointcloud", 1))
 {
   // Register callback for subscribing synched color, depth and camera_info.
     _sync.registerCallback(&ColorDepthExample::camera_cb, this);
 }
 
 void
-ColorDepthExample::camera_cb(const image_cp& color,
-			     const image_cp& depth,
-			     const camera_info_cp& camera_info)
+ColorDepthExample::camera_cb(const sensor_msgs::ImageConstPtr& color,
+			     const sensor_msgs::ImageConstPtr& depth,
+			     const sensor_msgs::CameraInfoConstPtr& camera_info)
 {
     if (color->encoding != sensor_msgs::image_encodings::RGB8)
     {
@@ -103,14 +98,14 @@ ColorDepthExample::camera_cb(const image_cp& color,
 }
 
 
-template <class T> ColorDepthExample::cloud_cp
+template <class T> sensor_msgs::PointCloud2ConstPtr
 ColorDepthExample::create_cloud_from_color_and_depth(
-			const image_cp& color,
-			const image_cp& depth,
-			const camera_info_cp& camera_info)
+			const sensor_msgs::ImageConstPtr& color,
+			const sensor_msgs::ImageConstPtr& depth,
+			const sensor_msgs::CameraInfoConstPtr& camera_info)
 {
   // Allocate memory for output pointcloud from heap and setup header and size.
-    const cloud_p	cloud(new cloud_t);
+    const sensor_msgs::PointCloud2Ptr	cloud(new sensor_msgs::PointCloud2);
     cloud->header	= depth->header;
     cloud->height	= depth->height;
     cloud->width	= depth->width;
