@@ -8,7 +8,6 @@ depth_camera_tutorial
 - depthカメラが出力するdepth画像を3D pointcloudに変換する方法
 - depthカメラが出力するdepth画像とcolor画像を同時に扱う方法
 
-
 ## 1. depthカメラ
 ### 1.1 depthカメラの出力
 多くのdepthカメラは，depthセンサとcolor（あるいはgrey）センサの両方を備える．通常両者は別のハードウェアである（[Realsense](https://www.intel.com/content/www/us/en/architecture-and-technology/realsense-overview.html)など）が，同じハードウェアで兼ねる場合もある（[PhoXi](https://www.photoneo.com/phoxi-3d-scanner)など）．
@@ -20,9 +19,9 @@ depthカメラのROSドライバは，
 - **colorセンサのカメラパラメータ**: [sensor_msgs/CameraInfo](https://docs.ros.org/en/api/sensor_msgs/html/msg/CameraInfo.html)型．水平/垂直方向の焦点距離や画像主点など
 - **depth画像とカメラパラメータから計算された3D点から成るpointcloud**: [sensor_msgs/PointCloud2](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud2.html)型
 
-を出力する．`sensor_msgs/PointCloud2`型のpointcloudの各点には，その3D座標値のほか，オプションとしてカラー値や法線を表す3Dベクトルを格納することができる．
+を出力する．[sensor_msgs/PointCloud2](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud2.html)型のpointcloudの各点には，その3D座標値のほか，オプションとしてカラー値や法線を表す3Dベクトルを格納することができる．
 
-かつてはpointcloudの型として[sensor_msgs/PointCloud](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud.html)が使われていたが，現在はほとんど`sensor_msgs/PointCloud2`に移行している．
+かつてはpointcloudの型として[sensor_msgs/PointCloud](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud.html)が使われていたが，現在はほとんど[sensor_msgs/PointCloud2](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud2.html)に移行している．
 
 ### 1.2 depth値の型
 depthカメラのROSドライバは，depth画像の各画素を`float`または[uint16_t](https://cpprefjp.github.io/reference/cstdint/uint16_t.html)型で出力し，前者の単位はメートル，後者はミリメートルである([see here](https://ros.org/reps/rep-0118.html))．両者の区別は，[sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型メッセージの`encoding`フィールドに反映される．
@@ -32,7 +31,7 @@ depthカメラのROSドライバは，depth画像の各画素を`float`または
 depth値を`float`型で出力するドライバが大半であるが，[オリジナルのRealsense用ドライバ](https://github.com/IntelRealSense/realsense-ros)は[uint16_t](https://cpprefjp.github.io/reference/cstdint/uint16_t.html)型で出力する．この時，最小単位が1mmとなるので，カメラと対象物体の距離が近い(接写)場合，depth値から復元された3D点群に量子化誤差による階段状のアーチファクトが生じることがある．これを避けるために[float型で出力するように修正したドライバ](https://gitlab.com/art-aist/realsense-ros)があるので，接写する場合はこちらを使用することを薦める．
 
 ### 1.3 無効画素の扱い
-一般に，depthカメラで取得したdepth画像には，depth値が得られない無効画素が含まれる．片方のセンサからしか観測されない3D点（ステレオの場合）やプロジェクタの光が照射されない3D点（coded light patternの場合）などのオクルージョンによるもの，黒色物体など反射光の不足によるものが代表的である．このような無効画素は，トピックメッセージ上で次のように表現される([see here](https://ros.org/reps/rep-0118.html))．
+一般に，depthカメラで取得したdepth画像には，depth値が得られない無効画素が含まれる．無効画素が生じる原因としては，片方のセンサからしか観測されない3D点（ステレオの場合）やプロジェクタの光が照射されない3D点（coded light patternの場合）などのオクルージョン，黒色物体など反射光の不足等が代表的である．このような無効画素は，トピックメッセージ上で次のように表現される([see here](https://ros.org/reps/rep-0118.html))．
 - **pointcloud**: [sensor_msgs/PointCloud2](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud2.html)型．x, y, z座標値に[NaN](https://cpprefjp.github.io/reference/limits/numeric_limits/quiet_nan.html)を入れて無効画素を表す
 - **depth画像**: [sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型．depth値に`0`を入れて無効画素を表す
 
@@ -43,7 +42,6 @@ depth値を`float`型で出力するドライバが大半であるが，[オリ�
 - **unorganized pointcloud**: `height` = 1, `width` = 点の個数, `is_dense` = true
 - **organized pointcloud**: `height` = 二次元配列の行数, `width` = 二次元配列の列数, `is_dense` = false
 
-[message_filters](http://wiki.ros.org/message_filters)
 
 ### 1.5 pointcloudとdepth画像のどちらを選ぶか？
 複数のROSノード間でdepthデータを交換する場合，pointcloud形式とdepth画像形式のいずれかを選択できる．両者の得失は，以下のとおりである．
@@ -55,10 +53,10 @@ pointcloudの場合
 
 一方，depth画像の場合
 - ユーザプログラムの中でdepth値から3D座標を計算する必要がある
-- depth画像とカメラパラメータの両方をやりとりする必要がある
+- depth画像とカメラパラメータの両方を送受信する必要がある
 - データ総量はpointcloudよりも小さく，通信の負担が軽い
 - [image_transport](http://wiki.ros.org/image_transport)を使えば，画像情報を圧縮して通信の負担を軽減できる
-- カラー情報が必要な場合は，カラー画像を別途やりとりする必要がある．
+- カラー情報が必要な場合は，別途カラー画像を送受信する必要がある．
 ## 2. パッケージのビルド
 まず`OpenCV`をインストールしてから次のようにダウンロード，ビルドする．
 ```
@@ -95,6 +93,12 @@ $ roslaunch depth_camera_tutorial run.launch prog:=pointcloud_example [camera_na
 ```
 $ roslaunch depth_camera_tutorial run.launch prog:=depth_example [camera_name:=realsense|phoxi]
 ```
+
+subscribeされるdepth画像とカメラパラメータの2つのトピックは，時間的に同期している必要がある．一般に，ROSにおいて同期した複数のトピックをsubscribeするには
+[message_filters](http://wiki.ros.org/message_filters)を使う．しかし，[sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型と[sensor_msgs/CameraInfo](https://docs.ros.org/en/api/sensor_msgs/html/msgCameraInfo.html)型の2つトピックをsubscruibeする場合は，[image_transport](http://wiki.ros.org/image_transport)パッケージに含まれる[CameraSubscriber](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1CameraSubscriber.html)を使用するのが便利なので，ここではそれを用いて実装している．
+
+[CameraSubscriber](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1CameraSubscriber.html)は，depth画像に限らず，一般のモノクロ/カラー画像をカメラパラメータと共にsubscribeする時に使用される．
+
 プログラムの要点は，以下のとおりである．
 
 ### 3.3 color_depth_example
@@ -106,6 +110,9 @@ $ roslaunch depth_camera_tutorial run.launch prog:=depth_example [camera_name:=r
 ```
 $ roslaunch depth_camera_tutorial run.launch prog:=color_depth_example [camera_name:=realsense|phoxi]
 ```
+
+ここでは，同期したカラー画像，depth画像およびカメラパラメータの3つのtopicをsubscribeする必要があるため，[message_filters](http://wiki.ros.org/message_filters)パッケージに含まれる[message_filters::TimeSynchronizer< M0, M1, M2, M3, M4, M5, M6, M7, M8 >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1TimeSynchronizer.html)を使う．また，カメラパラメータは[message_filters::Subscriber< M >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1Subscriber.html)によってsubscribeする．color画像とdepth画像もこれを用いてsubscribeすることもできるが，[image_transport::SubscriberFilter](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1SubscriberFilter.html)を使うと，画像圧縮により通信の負担を軽減する[image_transfport](http://wiki.ros.org/image_transport)の機能を享受できる．
+
 プログラムの要点は，以下のとおりである．
 
 ## 4. nodeletを用いた同一プロセス内でのゼロコピー通信
