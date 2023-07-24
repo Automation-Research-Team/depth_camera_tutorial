@@ -128,7 +128,7 @@ $ roslaunch depth_camera_tutorial run.launch prog:=color_depth_example [camera_n
 プログラムの要点は，以下のとおりである．
 - カラー画像とdepth画像のsubscriberを[image_transport::SubscriberFilter](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1SubscriberFilter.html)型で[定義](src/color_depth_example.cpp#L54-55)
 - カメラパラメータのsubscriberを[message_filters::Subscriber< M >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1Subscriber.html)型で[定義](src/color_depth_example.cpp#L56)
-- 3つの入力トピックを同期させる`synchronizeer`([message_filters::TimeSynchronizer< M0, M1, M2, M3, M4, M5, M6, M7, M8 >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1TimeSynchronizer.html)型)を[定義](src/color_depth_example.cpp#L57)
+- 3つの入力トピックを同期させる`synchronizer`([message_filters::TimeSynchronizer< M0, M1, M2, M3, M4, M5, M6, M7, M8 >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1TimeSynchronizer.html)型)を[定義](src/color_depth_example.cpp#L57)
 - `synchronizer`に同期された3つの入力トピックに対するコールバック関数を[設定](src/color_depth_example.cpp#L70)
 - depth値から3D座標を計算する方法は[depth_example](src/depth_example.cpp)と同様
 - pointcloud中の各点にカラー情報を与えるために，[sensor_msgs::PointCloud2Iterator< T >](http://docs.ros.org/en/melodic/api/sensor_msgs/html/classsensor__msgs_1_1PointCloud2Iterator.html)を介して`rgb`フィールドにアクセスする([see code](src/color_depth_example.cpp#L140))
