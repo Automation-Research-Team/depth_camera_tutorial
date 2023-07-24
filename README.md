@@ -68,8 +68,8 @@ $ catkin build detph_camera_tutorial
 ```
 サンプルプログラムを動かすためには，depthカメラとして[Realsense](https://www.intel.com/content/www/us/en/architecture-and-technology/realsense-overview.html)の任意の機種またはPhotoneo社の任意の機種のいずれかが必要である．
 ## 3. サンプルプログラム
-### 3.1 pointcloudトピックのsubscribeとその処理
-[pointcloud_example](src/pointcloud_example.cpp)は，depthカメラからpointcloudを入力し，color情報を取り出して2次元画像として出力する．
+### 3.1 pointcloud_example
+[pointcloud_example](src/pointcloud_example.cpp)は，pointcloudに含まれる各3D点の情報を取り出す方法を示すサンプルプログラムである．具体的には，depthカメラからpointcloudを入力し，color情報を取り出して2次元画像として出力する．
 - **入力トピック**: depthカメラからのpointcloud([sensor_msgs/PointCloud2](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud2.html)型)
 - **出力トピック**: pointcloud中の各点に付与されたcolor情報から成る2次元画像([sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型)
 
@@ -86,8 +86,9 @@ $ roslaunch depth_camera_tutorial run.launch prog:=pointcloud_example [camera_na
 - color画像を表すローカル変数`color`は，`sensor_msgs::Image`型ではなく，`sensor_msg::ImagePtr`型になっており([see code](src/pointcloud_example.cpp#L61))，これは`boost::shared_ptr<sensor_msgs::Image>`の別名である．`shared_ptr`を介して画像のメモリ領域をheapから獲得することにより，同一プロセス内で画像をpublish/subscribeする時にserialize/deserializeを省略することができ([see here](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#Intraprocess_Publishing))，パフォーマンスが向上する．
 - `shared_ptr`を介して保持されたカラー画像の内容をpublish後に変更することはできない([see here](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#Intraprocess_Publishing))．そのため，変数`color`が指すメモリ領域は，各フレーム毎にheapから獲得しなければならない．
 
-### 3.2 depth画像トピックのsubscribeと3D座標値の計算
-[depth_example](src/depth_example.cpp)は，depthカメラからdepth画像とカメラパラメータを入力し，各画素の3D座標を計算してpointcloudとして出力する．
+### 3.2 depth_example
+depth画像トピックのsubscribeと3D座標値の計算
+[depth_example](src/depth_example.cpp)は，depth画像の各画素を3D点に変換する方法を示すサンプルプログラムである．具体的には，depthカメラからdepth画像とカメラパラメータを入力し，各画素の3D座標を計算してpointcloudとして出力する．
 - **入力トピック**: depthカメラからのdepth画像([sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型)とそのカメラパラメータ([sensor_msgs/CameraInfo](https://docs.ros.org/en/api/sensor_msgs/html/msgCameraInfo.html)型)
 - **出力トピック**: depth画像とカメラパラメータから計算されたpointcloud([sensor_msgs/PointCloud2](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud2.html)型)
 
