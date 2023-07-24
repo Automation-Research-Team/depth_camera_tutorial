@@ -3,6 +3,7 @@
 
   <arg name="prog"		default="pointcloud_example"/>
   <arg name="camera_name"	default="realsense"/>	<!-- or "phoxi" -->
+  <arg name="manager"		default=""/>
 
   <!-- Setup subscribed topic names -->
   <arg if="$(eval camera_name == 'phoxi')"
@@ -25,7 +26,7 @@
        name="cloud_topic"	value="$(arg camera_name)/depth/color/points"/>
 
   <!-- Launch nodelet manager -->
-  <arg name="manager"		value="camera_manager"/>
+  <arg name="external_manager"	value="$(eval manager != '')"/>
   <arg name="manager_threads"	value="4"/>
   <node name="$(arg manager)"
 	pkg ="nodelet" type="nodelet" args="manager" output="screen">
@@ -33,8 +34,11 @@
   </node>
 
   <!-- Launch example program -->
+  <arg name="command"
+       value="$(eval 'standalone' if manager == '' else 'load')"/>
   <node name="$(arg prog)" pkg="nodelet" type="nodelet" output="screen"
-  	args="load depth_camera_tutorial/$(arg prog)_nodelet $(arg manager)">
+  	args="$(arg command) depth_camera_tutorial/$(arg prog)_nodelet
+	      $(arg manager)">
     <remap from="/color"		to="$(arg color_topic)"/>
     <remap from="/depth"		to="$(arg depth_topic)"/>
     <remap from="/camera_info"		to="$(arg camera_info_topic)"/>
@@ -49,7 +53,7 @@
       <arg name="id"			value="$(arg id)"/>
       <arg name="camera_name"		value="$(arg camera_name)"/>
       <arg name="trigger_mode"		value="0"/>	<!-- free run mode -->
-      <arg name="external_manager"	value="true"/>
+      <arg name="external_manager"	value="$(arg external_manager)"/>
       <arg name="manager"		value="$(arg manager)"/>
     </include>
 
@@ -80,8 +84,9 @@
       <arg name="color_width"		value="$(arg camera_width)"/>
       <arg name="color_height"		value="$(arg camera_height)"/>
       <arg name="color_fps"		value="$(arg fps)"/>
-      <arg name="external_manager"	value="true"/>
-      <arg name="manager"		value="/$(arg manager)"/>
+      <arg name="external_manager"	value="$(arg external_manager)"/>
+      <arg if="$(arg external_manager)"
+	   name="manager"		value="/$(arg manager)"/>
     </include>
   </group>
 
