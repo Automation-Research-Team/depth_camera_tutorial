@@ -18,16 +18,11 @@ namespace depth_camera_tutorial
 ************************************************************************/
 class PointCloudExample
 {
-  private:
-    using cloud_cp = sensor_msgs::PointCloud2ConstPtr;
-    using image_t  = sensor_msgs::Image;
-    using image_p  = sensor_msgs::ImagePtr;
-
   public:
 		PointCloudExample(ros::NodeHandle& nh)			;
 
   private:
-    void	cloud_cb(const cloud_cp& cloud)				;
+    void	cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud)	;
 
   private:
     const ros::Subscriber		_cloud_sub;
@@ -44,7 +39,7 @@ PointCloudExample::PointCloudExample(ros::NodeHandle& nh)
 }
 
 void
-PointCloudExample::cloud_cb(const cloud_cp& cloud)
+PointCloudExample::cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud)
 {
   // Check if the input cloud consists of a 2D map of 3D points.
     if (cloud->height == 1)
@@ -63,7 +58,7 @@ PointCloudExample::cloud_cb(const cloud_cp& cloud)
     }
 
   // Setup fields in the color image and allocate data buffer.
-    const image_p	color(new image_t);
+    const sensor_msgs::ImagePtr	color(new sensor_msgs::Image);
     color->header	= cloud->header;
     color->height	= cloud->height;
     color->width	= cloud->width;
@@ -81,9 +76,9 @@ PointCloudExample::cloud_cb(const cloud_cp& cloud)
 
 	for (uint32_t u = 0; u < color->width; ++u)
 	{
-	    rgb[0] = bgr[2];
-	    rgb[1] = bgr[1];
-	    rgb[2] = bgr[0];
+	    rgb[0] = bgr[2];	// red
+	    rgb[1] = bgr[1];	// green
+	    rgb[2] = bgr[0];	// blue
 
 	    rgb += 3;
 	    ++bgr;
