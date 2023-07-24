@@ -87,7 +87,6 @@ $ roslaunch depth_camera_tutorial run.launch prog:=pointcloud_example [camera_na
 - `shared_ptr`を介して保持されたカラー画像の内容をpublish後に変更することはできない([see here](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#Intraprocess_Publishing))．そのため，変数`color`が指すメモリ領域は，各フレーム毎にheapから獲得しなければならない．
 
 ### 3.2 depth_example
-depth画像トピックのsubscribeと3D座標値の計算
 [depth_example](src/depth_example.cpp)は，depth画像の各画素を3D点に変換する方法を示すサンプルプログラムである．具体的には，depthカメラからdepth画像とカメラパラメータを入力し，各画素の3D座標を計算してpointcloudとして出力する．
 - **入力トピック**: depthカメラからのdepth画像([sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型)とそのカメラパラメータ([sensor_msgs/CameraInfo](https://docs.ros.org/en/api/sensor_msgs/html/msgCameraInfo.html)型)
 - **出力トピック**: depth画像とカメラパラメータから計算されたpointcloud([sensor_msgs/PointCloud2](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud2.html)型)
@@ -95,6 +94,17 @@ depth画像トピックのsubscribeと3D座標値の計算
 次のように起動する．
 ```
 $ roslaunch depth_camera_tutorial run.launch prog:=depth_example [camera_name:=realsense|phoxi]
+```
+プログラムの要点は，以下のとおりである．
+
+### 3.3 color_depth_example
+[color_depth_example](src/color_depth_example.cpp)は，color画像とdepth画像を融合して各画素をカラー情報付きの3D点に変換する方法を示すサンプルプログラムである．具体的には，depthカメラからcolor画像，depth画像およびカメラパラメータを入力し，各画素の3D座標を計算するとともにそれにカラー値を付与してカラー情報付きpointcloudとして出力する．
+- **入力トピック**: depthカメラからのcolor画像([sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型)，depth画像([sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型)およびそのカメラパラメータ([sensor_msgs/CameraInfo](https://docs.ros.org/en/api/sensor_msgs/html/msgCameraInfo.html)型)
+- **出力トピック**: color画像，depth画像およびカメラパラメータから計算されたカラー情報付きpointcloud([sensor_msgs/PointCloud2](https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud2.html)型)
+
+次のように起動する．
+```
+$ roslaunch depth_camera_tutorial run.launch prog:=color_depth_example [camera_name:=realsense|phoxi]
 ```
 プログラムの要点は，以下のとおりである．
 
