@@ -107,7 +107,7 @@ subscribeされるdepth画像とカメラパラメータの2つのトピック�
 - 出力pointcloudの領域を確保し，そのサイズを[設定](src/depth_example.cpp#L81-86)．`shared_ptr`を介してメモリ領域をheapから獲得する理由は[pointcloud_example](src/pointcloud_example.cpp)と同様
 - [sensor_msgs::PointCloud2Modifier](http://docs.ros.org/en/melodic/api/sensor_msgs/html/classsensor__msgs_1_1PointCloud2Modifier.html)によってpointcloud中の各点が持つ情報を指定する．これによってpointcloudの内部バッファ領域が確保されるとともに，それにアクセスするための情報がセットされる．ここでは3D座標値のみを指定している([see code](src/depth_example.cpp#L92-96))
 - ある画素(u, v)におけるdepth値から3D座標を計算するには，まず(u, v)からレンズ歪を取り除き，さらに画像主点を原点とし焦点距離が`1`である`canonical image coordinates`(x, y)に変換することが必要である．これは，`OpenCV`の[cv::undistortPoints()](https://docs.opencv.org/4.4.0/d9/d0c/group__calib3d.html#ga55c716492470bfe86b0ee9bf3a1f0f7e)を用いて実現する
-- そのために，入力depth画像の1行毎に画素座標の配列`uv`を[作り](src/depth_example.cpp#L114-115)，カメラの内部パラメータ行列`K`とレンズ歪パラメータ`D`とともに[cv::undistortPoints()に渡して](src/depth_example.cpp#119)`canonical image coordinates`の配列`xy`を計算する
+- そのために，入力depth画像の1行毎に画素座標の配列`uv`を[作り](src/depth_example.cpp#L114-115)，カメラの内部パラメータ行列`K`とレンズ歪パラメータ`D`とともに[cv::undistortPoints()に渡して](src/depth_example.cpp#L119)`canonical image coordinates`の配列`xy`を計算する
 - pointcloud中の各点に3D座標を与えるために，[sensor_msgs::PointCloud2Iterator< T >](http://docs.ros.org/en/melodic/api/sensor_msgs/html/classsensor__msgs_1_1PointCloud2Iterator.html)を介して`x`, `y`, `z`フィールドにアクセスする([see code](src/depth_example.cpp#L111))
 - depth値が[uint16_t](https://cpprefjp.github.io/reference/cstdint/uint16_t.html)型の場合は[メートル単位に直す](src/depth_example.cpp#L125)
 - `xy`にdepth値を乗じて3D点のx, y座標を計算する．z座標はdepth値をそのまま用いる([see code](src/depth_example.cpp#L129-131))
