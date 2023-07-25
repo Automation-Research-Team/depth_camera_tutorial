@@ -126,9 +126,9 @@ DepthExample::create_cloud_from_depth(
 
 	    if (d != 0.0f)	// valid depth?
 	    {
-	    	xyz[0] = xy(u).x * d;	// x
-	    	xyz[1] = xy(u).y * d;	// y
-	    	xyz[2] = d;		// z
+	    	xyz[0] = xy(u).x * d;	// X
+	    	xyz[1] = xy(u).y * d;	// Y
+	    	xyz[2] = d;		// Z
 	    }
 	    else
 	    {

@@ -157,9 +157,9 @@ ColorDepthExample::create_cloud_from_color_and_depth(
 
 	    if (d != 0.0f)				// valid depth?
 	    {
-	    	xyz[0] = xy(u).x * d;	// x
-	    	xyz[1] = xy(u).y * d;	// y
-	    	xyz[2] = d;		// z
+	    	xyz[0] = xy(u).x * d;	// X
+	    	xyz[1] = xy(u).y * d;	// Y
+	    	xyz[2] = d;		// Z
 		bgr[0] = q[2];		// blue
 		bgr[1] = q[1];		// green
 		bgr[2] = q[0];		// red

@@ -50,16 +50,17 @@ depth値を`float`型で出力するドライバが大半であるが，[オリ�
 複数のROSノード間でdepthデータを交換する場合，pointcloud形式とdepth画像形式のいずれかを選択できる．両者の得失は，以下のとおりである．
 
 pointcloudの場合
-- depth値からの3D座標の計算はカメラドライバに任せることができる
+- depth値からの3D座標の計算をカメラドライバに任せることができる
 - `organized pointcloud`を選んだ場合，データ総量はdepth画像よりも大きくなり，通信負荷が増す
 - pointcloud中の各点にカラー情報を含めることができるが，depth値のない無効画素におけるカラー値は失われる
 
 depth画像の場合
 - ユーザプログラムの中でdepth値から3D座標を計算する必要がある
 - depth画像とカメラパラメータの両方を送受信する必要がある
+- カラー情報が必要な場合は，さらにカラー画像を送受信する必要がある
 - データ総量はpointcloudよりも小さく，通信負荷が軽い
 - [image_transport](http://wiki.ros.org/image_transport)を使えば，画像情報を圧縮して通信負荷を軽減できる
-- カラー情報が必要な場合は，別途カラー画像を送受信する必要がある．
+
 ## 2. パッケージのビルド
 まず`OpenCV`をインストールしてから次のようにダウンロード，ビルドする．
 ```
@@ -84,8 +85,8 @@ $ roslaunch depth_camera_tutorial run.launch prog:=pointcloud_example camera_nam
 - [sensor_msgs::PointCloud2ConstIterator< T >](http://docs.ros.org/en/melodic/api/sensor_msgs/html/classsensor__msgs_1_1PointCloud2ConstIterator.html)を介してpointcloud中の3D点の`rgb`フィールドにアクセス([see code](src/pointcloud_example.cpp#L71))
 - `rgb`フィールド中のcolorコンポーネントの並びは，下位バイトから`b`, `g`, `r`の順であることに注意([see code](src/pointcloud_example.cpp#L79-81))
 - [image_transport](http://wiki.ros.org/image_transport)を用いて生成された[publisher](src/pointcloud_example.cpp#L36-37)を介して，2次元color画像を[publish](src/pointcloud_example.cpp#L89)
-- color画像を表すローカル変数`color`は，`sensor_msgs::Image`型ではなく，`sensor_msg::ImagePtr`型になっており([see code](src/pointcloud_example.cpp#L61))，これは`boost::shared_ptr<sensor_msgs::Image>`の別名である．`shared_ptr`を介して画像のメモリ領域をheapから獲得することにより，同一プロセス内で画像をpublish/subscribeする時にserialize/deserializeを省略することができ([see here](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#Intraprocess_Publishing))，通信負荷が軽減する．
-- `shared_ptr`を介して保持されたカラー画像の内容をpublish後に変更してはならない([see here](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#Intraprocess_Publishing))．そのため，変数`color`が指すメモリ領域は，各フレーム毎にheapから獲得しなければならない．
+- color画像を表すローカル変数`color`は，`sensor_msgs::Image`型ではなく，`sensor_msg::ImagePtr`型になっており([see code](src/pointcloud_example.cpp#L61))，これは`boost::shared_ptr<sensor_msgs::Image>`の別名である．`shared_ptr`を介して画像のメモリ領域をheapから獲得することにより，同一プロセス内で画像をpublish/subscribeする時にserialize/deserializeを省略することができ([see here](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#Intraprocess_Publishing))，通信負荷が軽減する
+- `shared_ptr`を介して保持されたカラー画像の内容をpublish後に変更してはならない([see here](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#Intraprocess_Publishing))．そのため，変数`color`が指すメモリ領域のheapからの獲得は，毎フレーム行わなければならない
 
 ### 3.2 depth_example
 [depth_example](src/depth_example.cpp)は，depth画像の各画素を3D点に変換する方法を示すサンプルプログラムである．具体的には，depthカメラからdepth画像とカメラパラメータを入力し，各画素の3D座標を計算してpointcloudとして出力する．
@@ -98,12 +99,12 @@ $ roslaunch depth_camera_tutorial run.launch prog:=depth_example camera_name:=[r
 ```
 
 subscribeされるdepth画像とカメラパラメータの2つのトピックは，時間的に同期している必要がある．一般に，ROSにおいて複数のトピックを同期させた上でsubscribeするには
-[message_filters](http://wiki.ros.org/message_filters)を使う．しかし，[sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型と[sensor_msgs/CameraInfo](https://docs.ros.org/en/api/sensor_msgs/html/msgCameraInfo.html)型の2つトピックをsubscribeする場合は，[image_transport](http://wiki.ros.org/image_transport)パッケージに含まれる[CameraSubscriber](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1CameraSubscriber.html)を使用するのが便利なので，ここではそれを用いて実装している．
+[message_filters](http://wiki.ros.org/message_filters)を使う．しかし，同期をとるトピックが[sensor_msgs/Image](https://docs.ros.org/en/api/sensor_msgs/html/msg/Image.html)型と[sensor_msgs/CameraInfo](https://docs.ros.org/en/api/sensor_msgs/html/msgCameraInfo.html)型の2つの場合は，[image_transport](http://wiki.ros.org/image_transport)パッケージに含まれる[CameraSubscriber](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1CameraSubscriber.html)が便利である．ここではそれを用いて実装している．
 
 [CameraSubscriber](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1CameraSubscriber.html)は，depth画像に限らず，一般のモノクロ/カラー画像をカメラパラメータと共にsubscribeする時に使用される．
 
 プログラムの要点は，以下のとおりである．
-- [image_transport](http://wiki.ros.org/image_transport)を用いて[CameraSubscriber](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1CameraSubscriber.html)を生成([see code](src/depth_example.cpp#L49-51))．カメラパラメータのトピック名が指定されていないが，画像トピックが属する名前空間にある`camera_info`というトピックが自動的にsubscribeされる．
+- [image_transport](http://wiki.ros.org/image_transport)を用いて[CameraSubscriber](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1CameraSubscriber.html)を生成([see code](src/depth_example.cpp#L49-51))．カメラパラメータのトピック名が指定されていないが，画像トピックが属する名前空間にある`camera_info`というトピックが自動的にsubscribeされるので心配無用
 - 入力depth画像の`encoding`フィールドからdepth値の型を判定し，それに応じてpointcloud生成のメンバ関数を呼び出し，結果をpublish([see code](src/depth_example.cpp#L60-68))
 - 出力pointcloudの領域を確保し，そのサイズを[設定](src/depth_example.cpp#L81-86)．`shared_ptr`を介してメモリ領域をheapから獲得する理由は[pointcloud_example](src/pointcloud_example.cpp)と同様
 - [sensor_msgs::PointCloud2Modifier](http://docs.ros.org/en/melodic/api/sensor_msgs/html/classsensor__msgs_1_1PointCloud2Modifier.html)によってpointcloud中の各点が持つ情報を指定する．これによってpointcloudの内部バッファ領域が確保されるとともに，それにアクセスするための情報がセットされる．ここでは3D座標値のみを指定している([see code](src/depth_example.cpp#L92-96))
@@ -124,13 +125,13 @@ subscribeされるdepth画像とカメラパラメータの2つのトピック�
 $ roslaunch depth_camera_tutorial run.launch prog:=color_depth_example [camera_name:=realsense|phoxi]
 ```
 
-ここでは，同期したカラー画像，depth画像およびカメラパラメータの3つのtopicをsubscribeする必要があるため，[message_filters](http://wiki.ros.org/message_filters)パッケージに含まれる[message_filters::TimeSynchronizer< M0, M1, M2, M3, M4, M5, M6, M7, M8 >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1TimeSynchronizer.html)を使う．また，カメラパラメータは[message_filters::Subscriber< M >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1Subscriber.html)によってsubscribeする．color画像とdepth画像もこれを用いてsubscribeできるが，[image_transport::SubscriberFilter](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1SubscriberFilter.html)を使うと，画像を圧縮して通信負荷を軽減する[image_transport](http://wiki.ros.org/image_transport)の機能を享受できる．
+ここでは，同期したカラー画像，depth画像およびカメラパラメータの3つのtopicをsubscribeする必要があるため，[message_filters](http://wiki.ros.org/message_filters)パッケージに含まれる[message_filters::TimeSynchronizer< M0, M1, M2, M3, M4, M5, M6, M7, M8 >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1TimeSynchronizer.html)を使う．また，カメラパラメータは[message_filters::Subscriber< M >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1Subscriber.html)によってsubscribeする．color画像とdepth画像についてもこれを用いてsubscribeすることも可能であるが，[image_transport::SubscriberFilter](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1SubscriberFilter.html)を使うと，画像を圧縮して通信負荷を軽減する[image_transport](http://wiki.ros.org/image_transport)の機能を享受できる．
 
 プログラムの要点は，以下のとおりである．
 - カラー画像とdepth画像のsubscriberを[image_transport::SubscriberFilter](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1SubscriberFilter.html)型で[定義](src/color_depth_example.cpp#L54-55)
 - カメラパラメータのsubscriberを[message_filters::Subscriber< M >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1Subscriber.html)型で[定義](src/color_depth_example.cpp#L56)
 - 3つの入力トピックを同期させる`synchronizer`([message_filters::TimeSynchronizer< M0, M1, M2, M3, M4, M5, M6, M7, M8 >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1TimeSynchronizer.html)型)を[定義](src/color_depth_example.cpp#L57)
-- `synchronizer`に同期された3つの入力トピックに対するコールバック関数を[設定](src/color_depth_example.cpp#L70)
+- 同期された3つの入力トピックを受信するコールバック関数を`synchronizer`に[設定](src/color_depth_example.cpp#L70)
 - depth値から3D座標を計算する方法は[depth_example](src/depth_example.cpp)と同様
 - pointcloud中の各点にカラー情報を与えるために，[sensor_msgs::PointCloud2Iterator< T >](http://docs.ros.org/en/melodic/api/sensor_msgs/html/classsensor__msgs_1_1PointCloud2Iterator.html)を介して`rgb`フィールドにアクセスする([see code](src/color_depth_example.cpp#L140))
 - depth値が`0`でない有効画素には[入力カラー画像から得た値を設定](src/color_depth_example.cpp#L163-165)
