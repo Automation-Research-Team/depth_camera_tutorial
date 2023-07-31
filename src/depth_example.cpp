@@ -37,7 +37,8 @@ class DepthExample
     sensor_msgs::PointCloud2ConstPtr
 		create_cloud_from_depth(
 			const sensor_msgs::ImageConstPtr& depth,
-			const sensor_msgs::CameraInfoConstPtr& camera_info);
+			const sensor_msgs::CameraInfoConstPtr& camera_info)
+								const	;
 
   private:
     image_transport::ImageTransport	_it;
@@ -75,7 +76,7 @@ DepthExample::camera_cb(const sensor_msgs::ImageConstPtr& depth,
 template <class T> sensor_msgs::PointCloud2ConstPtr
 DepthExample::create_cloud_from_depth(
 		const sensor_msgs::ImageConstPtr& depth,
-		const sensor_msgs::CameraInfoConstPtr& camera_info)
+		const sensor_msgs::CameraInfoConstPtr& camera_info) const
 {
   // Allocate memory for output pointcloud from heap and setup header and size.
     const sensor_msgs::PointCloud2Ptr	cloud(new sensor_msgs::PointCloud2);

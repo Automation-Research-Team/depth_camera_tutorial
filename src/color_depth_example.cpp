@@ -47,7 +47,8 @@ class ColorDepthExample
 		create_cloud_from_color_and_depth(
 		    const sensor_msgs::ImageConstPtr& color,
 		    const sensor_msgs::ImageConstPtr& depth,
-		    const sensor_msgs::CameraInfoConstPtr& camera_info)	;
+		    const sensor_msgs::CameraInfoConstPtr& camera_info)
+								const	;
 
   private:
     image_transport::ImageTransport			 _it;
@@ -100,9 +101,9 @@ ColorDepthExample::camera_cb(const sensor_msgs::ImageConstPtr& color,
 
 template <class T> sensor_msgs::PointCloud2ConstPtr
 ColorDepthExample::create_cloud_from_color_and_depth(
-			const sensor_msgs::ImageConstPtr& color,
-			const sensor_msgs::ImageConstPtr& depth,
-			const sensor_msgs::CameraInfoConstPtr& camera_info)
+		const sensor_msgs::ImageConstPtr& color,
+		const sensor_msgs::ImageConstPtr& depth,
+		const sensor_msgs::CameraInfoConstPtr& camera_info) const
 {
   // Allocate memory for output pointcloud from heap and setup header and size.
     const sensor_msgs::PointCloud2Ptr	cloud(new sensor_msgs::PointCloud2);
