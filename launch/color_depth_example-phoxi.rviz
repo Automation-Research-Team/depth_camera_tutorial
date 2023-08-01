@@ -72,11 +72,11 @@ Visualization Manager:
       Channel Name: intensity
       Class: rviz/DepthCloud
       Color: 255; 255; 255
-      Color Image Topic: /realsense/color/image_raw
+      Color Image Topic: /phoxi/texture
       Color Transformer: RGB8
       Color Transport Hint: raw
       Decay Time: 0
-      Depth Map Topic: /realsense/aligned_depth_to_color/image_raw
+      Depth Map Topic: /phoxi/depth_map
       Depth Map Transport Hint: raw
       Enabled: false
       Invert Rainbow: false
@@ -125,7 +125,7 @@ Visualization Manager:
       Value: true
     - Class: rviz/Image
       Enabled: true
-      Image Topic: /realsense/color/image_raw
+      Image Topic: /phoxi/texture
       Max Value: 1
       Median window: 5
       Min Value: 0
@@ -139,7 +139,7 @@ Visualization Manager:
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: realsense_color_optical_frame
+    Fixed Frame: phoxi_sensor
     Frame Rate: 30
   Name: root
   Tools:
@@ -163,25 +163,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 0.8679167032241821
+      Distance: 1.5860220193862915
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.029589639976620674
-        Y: -0.028850622475147247
-        Z: 0.43900105357170105
+        X: -0.02313019335269928
+        Y: 0.0784810483455658
+        Z: 1.4597218036651611
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: -1.3597965240478516
+      Pitch: -1.3633519411087036
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.605310440063477
+      Yaw: 4.732802391052246
     Saved: ~
 Window Geometry:
   Displays:
@@ -201,5 +201,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 2264
-  X: 556
+  X: 555
   Y: 55

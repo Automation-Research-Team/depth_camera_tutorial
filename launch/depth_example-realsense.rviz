@@ -4,7 +4,6 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /TF1/Frames1
         - /OriginalDepthCloud1/Auto Size1
       Splitter Ratio: 0.5759803652763367
     Tree Height: 790
@@ -42,42 +41,6 @@ Toolbars:
 Visualization Manager:
   Class: ""
   Displays:
-    - Class: rviz/TF
-      Enabled: true
-      Filter (blacklist): ""
-      Filter (whitelist): ""
-      Frame Timeout: 15
-      Frames:
-        All Enabled: false
-        realsense_aligned_depth_to_color_frame:
-          Value: false
-        realsense_color_frame:
-          Value: false
-        realsense_color_optical_frame:
-          Value: true
-        realsense_depth_frame:
-          Value: false
-        realsense_depth_optical_frame:
-          Value: false
-        realsense_link:
-          Value: false
-      Marker Scale: 0.20000000298023224
-      Name: TF
-      Show Arrows: true
-      Show Axes: true
-      Show Names: true
-      Tree:
-        realsense_link:
-          realsense_aligned_depth_to_color_frame:
-            realsense_color_optical_frame:
-              {}
-          realsense_color_frame:
-            {}
-          realsense_depth_frame:
-            realsense_depth_optical_frame:
-              {}
-      Update Interval: 0
-      Value: true
     - Alpha: 0.5
       Cell Size: 1
       Class: rviz/Grid
@@ -135,8 +98,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 0.6339322924613953
-        Min Value: 0.05999359115958214
+        Max Value: 1.2491165399551392
+        Min Value: 0.25597265362739563
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -148,7 +111,7 @@ Visualization Manager:
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
-      Name: ConvertedCloud
+      Name: GeneratedCloud
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
@@ -218,7 +181,7 @@ Visualization Manager:
       Pitch: -1.5697963237762451
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.740312099456787
+      Yaw: 4.670312404632568
     Saved: ~
 Window Geometry:
   Displays:

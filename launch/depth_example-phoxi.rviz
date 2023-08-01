@@ -72,11 +72,11 @@ Visualization Manager:
       Channel Name: intensity
       Class: rviz/DepthCloud
       Color: 255; 255; 255
-      Color Image Topic: /realsense/color/image_raw
+      Color Image Topic: /phoxi/texture
       Color Transformer: RGB8
       Color Transport Hint: raw
       Decay Time: 0
-      Depth Map Topic: /realsense/aligned_depth_to_color/image_raw
+      Depth Map Topic: /phoxi/depth_map
       Depth Map Transport Hint: raw
       Enabled: false
       Invert Rainbow: false
@@ -98,14 +98,14 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 0.6339322924613953
-        Min Value: 0.05999359115958214
+        Max Value: 1.6850782632827759
+        Min Value: 1.0025509595870972
         Value: true
       Axis: Z
       Channel Name: intensity
       Class: rviz/PointCloud2
       Color: 255; 255; 255
-      Color Transformer: RGB8
+      Color Transformer: AxisColor
       Decay Time: 0
       Enabled: true
       Invert Rainbow: false
@@ -118,14 +118,14 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.0010000000474974513
       Style: Flat Squares
-      Topic: /color_depth_example/pointcloud
+      Topic: /depth_example/pointcloud
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
     - Class: rviz/Image
       Enabled: true
-      Image Topic: /realsense/color/image_raw
+      Image Topic: /phoxi/texture
       Max Value: 1
       Median window: 5
       Min Value: 0
@@ -139,7 +139,7 @@ Visualization Manager:
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: realsense_color_optical_frame
+    Fixed Frame: phoxi_sensor
     Frame Rate: 30
   Name: root
   Tools:
@@ -163,25 +163,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 0.8679167032241821
+      Distance: 1.6530919075012207
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.029589639976620674
-        Y: -0.028850622475147247
-        Z: 0.43900105357170105
+        X: 0.005542107857763767
+        Y: 0.06024189293384552
+        Z: 1.5071794986724854
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: -1.3597965240478516
+      Pitch: -1.401456356048584
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.605310440063477
+      Yaw: 4.6852922439575195
     Saved: ~
 Window Geometry:
   Displays:
@@ -201,5 +201,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 2264
-  X: 556
+  X: 1338
   Y: 55

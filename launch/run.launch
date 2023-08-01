@@ -35,17 +35,13 @@
 
   <!-- Launch PhoXi camera if specified -->
   <group if="$(eval camera_name == 'phoxi')">
-    <arg name="id"		default="JKE-001"/>
+    <arg name="id"		default="InstalledExamples-basic-example"/>
 
     <include file="$(find aist_phoxi_camera)/launch/run.launch">
       <arg name="id"		value="$(arg id)"/>
       <arg name="camera_name"	value="$(arg camera_name)"/>
       <arg name="trigger_mode"	value="0"/>	<!-- free run mode -->
     </include>
-
-    <node name="static_transform_publisher" pkg="tf"
-	  type="static_transform_publisher"
-	  args="0 0 0.6 0 0 3.14 base_link $(arg camera_name) 10"/>
   </group>
 
   <!-- Launch Realsense camera if specified -->
@@ -56,7 +52,7 @@
 
     <include file="$(find realsense2_camera)/launch/rs_camera.launch">
       <arg name="camera"		value="$(arg camera_name)"/>
-      <arg name="publish_tf"		value="true"/>
+      <arg name="publish_tf"		value="false"/>
       <arg name="enable_depth"		value="true"/>
       <arg name="enable_infra1"		value="false"/>
       <arg name="enable_infra2"		value="false"/>

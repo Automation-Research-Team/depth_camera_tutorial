@@ -80,14 +80,14 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.0010000000474974513
       Style: Flat Squares
-      Topic: /realsense/depth/color/points
+      Topic: /phoxi/pointcloud
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
     - Class: rviz/Image
       Enabled: true
-      Image Topic: /realsense/color/image_raw
+      Image Topic: /phoxi/texture
       Max Value: 1
       Median window: 5
       Min Value: 0
@@ -113,7 +113,7 @@ Visualization Manager:
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: realsense_color_optical_frame
+    Fixed Frame: phoxi_sensor
     Frame Rate: 30
   Name: root
   Tools:
@@ -137,25 +137,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 0.6814607977867126
+      Distance: 1.6998577117919922
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.026056744158267975
-        Y: -0.032447222620248795
-        Z: 0.43886587023735046
+        X: 0.011004219762980938
+        Y: 0.04473784938454628
+        Z: 1.5150662660598755
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: -1.5697963237762451
+      Pitch: -1.3422807455062866
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.788620471954346
+      Yaw: 4.635043144226074
     Saved: ~
 Window Geometry:
   Displays:

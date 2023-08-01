@@ -128,14 +128,14 @@ $ roslaunch depth_camera_tutorial run.launch prog:=color_depth_example [camera_n
 ここでは，同期したカラー画像，depth画像およびカメラパラメータの3つのtopicをsubscribeする必要があるため，[message_filters](http://wiki.ros.org/message_filters)パッケージに含まれる[message_filters::TimeSynchronizer< M0, M1, M2, M3, M4, M5, M6, M7, M8 >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1TimeSynchronizer.html)を使う．また，カメラパラメータは[message_filters::Subscriber< M >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1Subscriber.html)によってsubscribeする．color画像とdepth画像についてもこれを用いてsubscribeすることも可能であるが，[image_transport::SubscriberFilter](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1SubscriberFilter.html)を使うと，画像を圧縮して通信負荷を軽減する[image_transport](http://wiki.ros.org/image_transport)の機能を享受できる．
 
 プログラムの要点は，以下のとおりである．
-- カラー画像とdepth画像のsubscriberを[image_transport::SubscriberFilter](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1SubscriberFilter.html)型で[定義](src/color_depth_example.cpp#L55-56)
-- カメラパラメータのsubscriberを[message_filters::Subscriber< M >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1Subscriber.html)型で[定義](src/color_depth_example.cpp#L57)
-- 3つの入力トピックを同期させる`synchronizer`([message_filters::TimeSynchronizer< M0, M1, M2, M3, M4, M5, M6, M7, M8 >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1TimeSynchronizer.html)型)を[定義](src/color_depth_example.cpp#L58)
-- 同期された3つの入力トピックを受信するコールバック関数を`synchronizer`に[設定](src/color_depth_example.cpp#L71)
+- カラー画像とdepth画像のsubscriberを[image_transport::SubscriberFilter](http://docs.ros.org/en/noetic/api/image_transport/html/classimage__transport_1_1SubscriberFilter.html)型で[定義](src/color_depth_example.cpp#L71-72)
+- カメラパラメータのsubscriberを[message_filters::Subscriber< M >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1Subscriber.html)型で[定義](src/color_depth_example.cpp#L73)
+- 3つの入力トピックを同期させる`synchronizer`([message_filters::TimeSynchronizer< M0, M1, M2, M3, M4, M5, M6, M7, M8 >](http://docs.ros.org/en/noetic/api/message_filters/html/c++/classmessage__filters_1_1TimeSynchronizer.html)型)を[定義](src/color_depth_example.cpp#L74)
+- 同期された3つの入力トピックを受信するコールバック関数を`synchronizer`に[設定](src/color_depth_example.cpp#L87)
 - depth値から3D座標を計算する方法は[depth_example](src/depth_example.cpp)と同様
-- pointcloud中の各点にカラー情報を与えるために，[sensor_msgs::PointCloud2Iterator< T >](http://docs.ros.org/en/melodic/api/sensor_msgs/html/classsensor__msgs_1_1PointCloud2Iterator.html)を介して`rgb`フィールドにアクセスする([see code](src/color_depth_example.cpp#L141))
-- depth値が`0`でない有効画素には[入力カラー画像から得た値を設定](src/color_depth_example.cpp#L164-166)
-- 無効画素には[カラー値0を設定](src/color_depth_example.cpp#L172)
+- pointcloud中の各点にカラー情報を与えるために，[sensor_msgs::PointCloud2Iterator< T >](http://docs.ros.org/en/melodic/api/sensor_msgs/html/classsensor__msgs_1_1PointCloud2Iterator.html)を介して`rgb`フィールドにアクセスする([see code](src/color_depth_example.cpp#L179))
+- depth値が`0`でない有効画素には[入力カラー画像から得た値を設定](src/color_depth_example.cpp#L202)
+- 無効画素には[カラー値0を設定](src/color_depth_example.cpp#L208)
 
 ## 4. nodeletを用いた同一プロセス内でのゼロコピー通信
 一般に画像やpointcloudのデータ量は大きいので，それらをROSノード間で送受信するのは重い負荷となる．そのため，[roscpp](http://wiki.ros.org/roscpp)には，同一プロセス内でのtopic通信においてデータの受け渡しをそれを指すポインタのやりとりで済ませ，データ実体をコピーしない仕組みが備えられている([see here](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#Intraprocess_Publishing))．[nodelet](http://wiki.ros.org/nodelet)はこれを利用して，複数のROSノードを単一のプロセスにロードしてノード間通信の負荷を大幅に軽減するための基盤を提供する．具体的には，各ノードを共有ライブラリとして実装し，予め起動しておいた`nodelet manager`に動的にロードして各々に個別のスレッドを割り当てて走らせる．

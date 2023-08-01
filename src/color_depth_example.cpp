@@ -25,6 +25,21 @@ template <class T>
 inline float	to_meters(T depth)		{ return depth; }
 inline float	to_meters(uint16_t depth)	{ return 0.001f * depth; }
 
+//! Set color value.
+template <class T> inline void
+set_color(const sensor_msgs::PointCloud2Iterator<uint8_t>& bgr, T color)
+{
+    bgr[0] = color.b;
+    bgr[1] = color.g;
+    bgr[2] = color.r;
+}
+
+inline void    
+set_color(const sensor_msgs::PointCloud2Iterator<uint8_t>& bgr, uint8_t grey)
+{
+    bgr[0] = bgr[1] = bgr[2] = grey;
+}
+
 /************************************************************************
 *   class ColorDepthExample						*
 ************************************************************************/
@@ -34,7 +49,8 @@ class ColorDepthExample
     using sync_t = message_filters::TimeSynchronizer<sensor_msgs::Image,
 						     sensor_msgs::Image,
 						     sensor_msgs::CameraInfo>;
-
+    struct rgb_t	{ uint8_t	r, g, b; };
+    
   public:
 		ColorDepthExample(ros::NodeHandle& nh)			;
 
@@ -42,7 +58,7 @@ class ColorDepthExample
     void	camera_cb(const sensor_msgs::ImageConstPtr& color,
 			  const sensor_msgs::ImageConstPtr& depth,
 			  const sensor_msgs::CameraInfoConstPtr& camera_info);
-    template <class T>
+    template <class C, class T>
     sensor_msgs::PointCloud2ConstPtr
 		create_cloud_from_color_and_depth(
 		    const sensor_msgs::ImageConstPtr& color,
@@ -76,30 +92,52 @@ ColorDepthExample::camera_cb(const sensor_msgs::ImageConstPtr& color,
 			     const sensor_msgs::ImageConstPtr& depth,
 			     const sensor_msgs::CameraInfoConstPtr& camera_info)
 {
-    if (color->encoding != sensor_msgs::image_encodings::RGB8)
+    if (color->encoding == sensor_msgs::image_encodings::RGB8)
     {
-	ROS_ERROR_STREAM("Unknown color encoding[" << color->encoding << ']');
-	return;
+	if (depth->encoding == sensor_msgs::image_encodings::TYPE_16UC1)
+	{
+	    _cloud_pub.publish(
+		create_cloud_from_color_and_depth<rgb_t, uint16_t>(
+		    color, depth, camera_info));
+	}
+	else if (depth->encoding == sensor_msgs::image_encodings::TYPE_32FC1)
+	{
+	    _cloud_pub.publish(
+		create_cloud_from_color_and_depth<rgb_t, float>(
+		    color, depth, camera_info));
+	}
+	else
+	{
+	    ROS_ERROR_STREAM("Unknown depth type[" << depth->encoding << ']');
+	}
     }
-
-    if (depth->encoding == sensor_msgs::image_encodings::TYPE_16UC1)
+    else if (color->encoding == sensor_msgs::image_encodings::MONO8)
     {
-	_cloud_pub.publish(create_cloud_from_color_and_depth<uint16_t>(
-			       color, depth, camera_info));
-    }
-    else if (depth->encoding == sensor_msgs::image_encodings::TYPE_32FC1)
-    {
-	_cloud_pub.publish(create_cloud_from_color_and_depth<float>(
-			       color, depth, camera_info));
+	if (depth->encoding == sensor_msgs::image_encodings::TYPE_16UC1)
+	{
+	    _cloud_pub.publish(
+		create_cloud_from_color_and_depth<uint8_t, uint16_t>(
+		    color, depth, camera_info));
+	}
+	else if (depth->encoding == sensor_msgs::image_encodings::TYPE_32FC1)
+	{
+	    _cloud_pub.publish(
+		create_cloud_from_color_and_depth<uint8_t, float>(
+		    color, depth, camera_info));
+	}
+	else
+	{
+	    ROS_ERROR_STREAM("Unknown depth type[" << depth->encoding << ']');
+	}
     }
     else
     {
-	ROS_ERROR_STREAM("Unknown depth type[" << depth->encoding << ']');
+	ROS_ERROR_STREAM("Unknown color encoding[" << color->encoding << ']');
     }
 }
 
 
-template <class T> sensor_msgs::PointCloud2ConstPtr
+template <class C, class T> sensor_msgs::PointCloud2ConstPtr
 ColorDepthExample::create_cloud_from_color_and_depth(
 		const sensor_msgs::ImageConstPtr& color,
 		const sensor_msgs::ImageConstPtr& depth,
@@ -150,8 +188,8 @@ ColorDepthExample::create_cloud_from_color_and_depth(
 
 	auto	p = reinterpret_cast<const T*>(depth->data.data()
 					       + v*depth->step);
-	auto	q = reinterpret_cast<const uint8_t*>(color->data.data()
-						     + v*color->step);
+	auto	q = reinterpret_cast<const C*>(color->data.data()
+					       + v*color->step);
 	for (uint32_t u = 0; u < cloud->width; ++u)
 	{
 	    const auto	d = to_meters(*p++);		// depth in meters
@@ -161,9 +199,7 @@ ColorDepthExample::create_cloud_from_color_and_depth(
 	    	xyz[0] = xy(u).x * d;	// X
 	    	xyz[1] = xy(u).y * d;	// Y
 	    	xyz[2] = d;		// Z
-		bgr[0] = q[2];		// blue
-		bgr[1] = q[1];		// green
-		bgr[2] = q[0];		// red
+		set_color(bgr, *q);	// blue, green, red
 	    }
 	    else
 	    {
@@ -172,9 +208,9 @@ ColorDepthExample::create_cloud_from_color_and_depth(
 		bgr[0] = bgr[1] = bgr[2] = 0;
 	    }
 
-	    q += 3;
 	    ++xyz;
 	    ++bgr;
+	    ++q;
 	}
     }
 
